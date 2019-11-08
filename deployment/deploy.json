@@ -1,0 +1,111 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "_artifactsLocation": {
+            "type": "string",
+            "metadata": {
+                "description": "Location where nested templates are stored"
+            }
+        },
+        "_artifactsLocationSasToken": {
+            "type": "string",
+            "metadata": {
+                "description": "SAS token for use with location where nested templates are stored"
+            }
+        },
+        "resourcesPrefix": {
+            "type": "string"
+        }
+    },
+    "variables": {
+        "serviceBusNSName": "[concat(parameters('resourcesPrefix'), '-', 'svcbusns')]",
+        "serviceBusQueueName": "[concat(parameters('resourcesPrefix'), '-', 'svcbusqueue')]",
+        "functionAppName-A": "[concat(parameters('resourcesPrefix'), '-', 'fn-a')]",
+        "appInsightsName-A": "[concat(parameters('resourcesPrefix'), '-', 'fn-appinsights-a')]",
+        "functionAppName-B": "[concat(parameters('resourcesPrefix'), '-', 'fn-b')]",
+        "appInsightsName-B": "[concat(parameters('resourcesPrefix'), '-', 'fn-appinsights-b')]"
+    },
+    "resources": [
+        {
+            "name": "nested-service-bus-queue",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2016-09-01",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/nestedtemplates/service-bus-queue.json?', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "serviceBusNamespaceName": {
+                        "value": "[variables('serviceBusNSName')]"
+                    },
+                    "serviceBusQueueName": {
+                        "value": "[variables('serviceBusQueueName')]"
+                    }
+                }
+            }
+        },
+        {
+            "name": "nested-functions-a",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2016-09-01",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/nestedtemplates/functions.json?', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "appName": {
+                        "value": "[variables('functionAppName-A')]"
+                    },
+                    "applicationInsightsName": {
+                        "value": "[variables('appInsightsName-A')]"
+                    },
+                    "serviceBusConnString": {
+                        "value": "[reference('nested-service-bus-queue').outputs.NamespaceConnectionString.value]"
+                    },
+                    "serviceBusQueueName": {
+                        "value": "[variables('serviceBusQueueName')]"
+                    }
+                }
+            },
+            "dependsOn": [
+                "nested-service-bus-queue"
+            ]
+        },
+        {
+            "name": "nested-functions-b",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2016-09-01",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/nestedtemplates/functions.json?', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "appName": {
+                        "value": "[variables('functionAppName-B')]"
+                    },
+                    "applicationInsightsName": {
+                        "value": "[variables('appInsightsName-B')]"
+                    },
+                    "serviceBusConnString": {
+                        "value": "[reference('nested-service-bus-queue').outputs.NamespaceConnectionString.value]"
+                    },
+                    "serviceBusQueueName": {
+                        "value": "[variables('serviceBusQueueName')]"
+                    }
+                }
+            },
+            "dependsOn": [
+                "nested-service-bus-queue"
+            ]
+        }
+    ],
+    "outputs": {},
+    "functions": []
+}

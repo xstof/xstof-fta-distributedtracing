@@ -1,0 +1,9 @@
+@hostname = localhost
+@port = 7071
+@host = {{hostname}}:{{port}}
+@contentType = application/json
+
+###
+
+@submissionid = {{$guid}}
+POST http://{{host}}/api/{{submissionid}} HTTP/1.1
