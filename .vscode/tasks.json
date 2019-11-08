@@ -29,7 +29,7 @@
             "type": "process",
             "problemMatcher": "$msCompile",
             "options": {
-                "cwd": "${workspaceFolder}/src\\FunctionAppA"
+                "cwd": "${workspaceFolder}/src\\FunctionAppB"
             }
         },
         {
@@ -48,7 +48,7 @@
             },
             "problemMatcher": "$msCompile",
             "options": {
-                "cwd": "${workspaceFolder}/src\\FunctionAppA"
+                "cwd": "${workspaceFolder}/src\\FunctionAppB"
             }
         },
         {
@@ -64,7 +64,7 @@
             "type": "process",
             "problemMatcher": "$msCompile",
             "options": {
-                "cwd": "${workspaceFolder}/src\\FunctionAppA"
+                "cwd": "${workspaceFolder}/src\\FunctionAppB"
             }
         },
         {
@@ -81,14 +81,14 @@
             "dependsOn": "clean release",
             "problemMatcher": "$msCompile",
             "options": {
-                "cwd": "${workspaceFolder}/src\\FunctionAppA"
+                "cwd": "${workspaceFolder}/src\\FunctionAppB"
             }
         },
         {
             "type": "func",
             "dependsOn": "build",
             "options": {
-                "cwd": "${workspaceFolder}/src\\FunctionAppA/bin/Debug/netcoreapp2.1"
+                "cwd": "${workspaceFolder}/src\\FunctionAppB/bin/Debug/netcoreapp2.1"
             },
             "command": "host start",
             "isBackground": true,
