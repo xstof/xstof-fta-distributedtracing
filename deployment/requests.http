@@ -7,3 +7,7 @@
 
 @submissionid = {{$guid}}
 POST http://{{host}}/api/{{submissionid}} HTTP/1.1
+
+###
+
+GET http://{{host}}/api/InitiateFlowToHTTP HTTP/1.1
