@@ -6,8 +6,16 @@
 ###
 
 @submissionid = {{$guid}}
-POST http://{{host}}/api/{{submissionid}} HTTP/1.1
+POST http://{{host}}/api/queue/{{submissionid}} HTTP/1.1
 
 ###
 
-GET http://{{host}}/api/InitiateFlowToHTTP HTTP/1.1
+@submissionid = {{$guid}}
+POST http://{{host}}/api/queue-with-bagage/{{submissionid}} HTTP/1.1
+
+###
+GET http://{{host}}/api/http/ HTTP/1.1
+
+### 
+
+GET http://{{host}}/api/httpwithresp

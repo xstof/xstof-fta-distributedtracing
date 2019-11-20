@@ -3,7 +3,11 @@
 ## How does correlation work?
 
 See: 
+- https://docs.microsoft.com/en-us/azure/azure-monitor/app/auto-collect-dependencies
 - https://docs.microsoft.com/en-us/azure/azure-monitor/app/correlation
+- http://apmtips.com/blog/2017/10/18/two-types-of-correlation/
+- https://dev.applicationinsights.io/
+- https://devblogs.microsoft.com/aspnet/improvements-in-net-core-3-0-for-troubleshooting-and-monitoring-distributed-apps/
 
 ## Scenarios
 
@@ -44,6 +48,8 @@ Works out of box
 **Scenario**: Same as previous scenario, but now there is another function linked to another App Insights resource, which receives the message
 - no custom correlation code in function
 - no special configuration on Service Bus
+
+Note how this scenario is not officially supported, [as documented here](https://docs.microsoft.com/en-us/azure/azure-monitor/app/custom-operations-tracking#queue-instrumentation)
 
 **Results**: 
 
@@ -86,12 +92,12 @@ Note: this records the custom property on the `request` telemetry item not on an
 
 The interesting properties that appear as headers on the outbound HTTP call are:
 
-| Header                   | Value                                                   |
-| ------------             | -----------------------------------                     |
-| **TraceParent**          | 00-2ba1dcbb920c0c489823e86ee57e557d-82c588a5d78c3f4a-00 |
-| **Request-Id**           | \|2ba1dcbb920c0c489823e86ee57e557d.82c588a5d78c3f4a.    |
-| **Request-Context**      | appId=cid-v1:6b06625e-3d1f-4bb4-8b50-b22b20b5a6d6       |
-| X-Request-Id             | c39043fc-5693-4ca6-ba3c-56cf059acbad                    |
+| Header                   | Value                                                   | Comment                              |
+| ------------             | -----------------------------------                     | ------------------------------------ |
+| **TraceParent**          | 00-2ba1dcbb920c0c489823e86ee57e557d-82c588a5d78c3f4a-00 | is the new W3C trace context         |
+| **Request-Id**           | \|2ba1dcbb920c0c489823e86ee57e557d.82c588a5d78c3f4a.    | is the older "request-id" mechanism  |
+| **Request-Context**      | appId=cid-v1:6b06625e-3d1f-4bb4-8b50-b22b20b5a6d6       | represents the app id for AI A       |
+| X-Request-Id             | c39043fc-5693-4ca6-ba3c-56cf059acbad                    | (not important to the discussion)    | 
 
 (Note that our application id for App Insights A == 6b06625e-3d1f-4bb4-8b50-b22b20b5a6d6)
 
@@ -126,3 +132,70 @@ This means that the dependency telemetry item's `Dependency Id` is set on the ou
 
 ### Fn A -> Service Bus -> Fn B (with custom code to correlate across workspaces)
 
+When using the `Activity` class to add custom properties to the recorded telemetry, one can also use the `Activity Bagage` to indicate any information to be passed on to all dependencies.  To pass on a custom property to a dependency:
+
+~~~cs
+  using System.Diagnostics;
+  // ...
+  Activity currActivity = Activity.Current;
+  currActivity.AddBaggage("MySubmissionIdThroughBagage", submissionId);
+~~~
+
+Note how the call to `Activity.AddTag(..)` did _not_ result in anything being recorded on the dependency telemetry item.  Also, when used in our Function to enqueue an item, the metadata on that item would not show those tags.  This is different for `Activity.AddBagage`.  The enqueued message in this case, shows metadata like:
+
+| Property                 | Value                                                               |
+| ------------             | -----------------------------------                                 |
+| Correlation-Context      | MySubmissionIdThroughBagage=bec20faa-9fa1-4dfc-a081-9b32a52dbdac    |
+
+This mechanism works: 
+- despite that the Functions ServiceBus binding does not call into App Insights directly (it just uses the Service Bus SDK)
+- despite the fact that the Service Bus SDK does not know anything about our application context
+
+On the side of App Insights, for the request telemetry item nothing will have changed but the following is what we see for the dependency telemetry item:
+
+| Property                                  | Value                                   |
+| ------------                              | -----------------------------------     |
+| (custom) MySubmissionIdThroughBagage      | bec20faa-9fa1-4dfc-a081-9b32a52dbdac    |
+
+What if FunctionB now picks up this message from the queue?  This mechanism will propagate this property to the receiving invocating for FunctionB, which (thanks to the Service Bus SDK) will record the very same property in its request telemetry item:
+
+| Property                                  | Value                                   |
+| ------------                              | -----------------------------------     |
+| (custom) MySubmissionIdThroughBagage      | bec20faa-9fa1-4dfc-a081-9b32a52dbdac    |
+
+Even beyond this... if FunctionB does an outbound HTTP calls, that custom metadata will also travel in the headers of such outbound call.
+
+### Using Kusto to correlate items with a custom correlation ID
+
+You could write a Kusto query as below to find telemetry with a custom correlation ID, within a single App Insights component/workspace:
+
+~~~kusto
+(requests | union dependencies | union pageViews)
+| extend MyCustomCorrId = tostring(customDimensions.MyCustomCorrId) 
+| where  MyCustomCorrId == "7d767f42-3e80-4e4e-9d40-44edb59af6f3"
+~~~
+
+To do the same across workspaces, [see the documentation for this](https://docs.microsoft.com/en-us/azure/azure-monitor/log-query/cross-workspace-query#identifying-an-application).  This could look something like:
+
+~~~kusto
+let allApps = union app('aicorr-fn-appinsights-a').requests, app('aicorr-fn-appinsights-b').requests,
+              app('aicorr-fn-appinsights-a').dependencies, app('aicorr-fn-appinsights-b').dependencies,
+              app('aicorr-fn-appinsights-a').exceptions, app('aicorr-fn-appinsights-b').exceptions,
+              app('aicorr-fn-appinsights-a').traces, app('aicorr-fn-appinsights-b').traces,
+              app('aicorr-fn-appinsights-a').customEvents, app('aicorr-fn-appinsights-b').customEvents;
+allApps
+| extend MyCustomCorrId = tostring(customDimensions.MyCustomCorrId) 
+| where  MyCustomCorrId == "7d767f42-3e80-4e4e-9d40-44edb59af6f3"
+| order by timestamp asc
+~~~
+
+![la-cross-component-query](./images/la-query-cross-component-custom-corrid.png)
+
+- notice how the very first function call is _not_ present; which is because we only set the baggage _within_ that activity, when it already started.  Any activities that started after we set the baggage got the custom correlation id stamped on them and as such are retrieved by the query
+- to mitigate this, you'll want to stamp the original request with a tag, in additional to the baggage, like the below.  The above query would not need to be changed for this.
+
+~~~cs
+currActivity.AddTag("MyCustomCorrId", submissionId);
+~~~
+
+![fn-to-svcbus-to-fn-to-http](./images/fn-to-svcbus-to-fn-to-http.png)

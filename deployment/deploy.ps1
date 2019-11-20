@@ -4,7 +4,7 @@ Param(
   [string]$RG,
 
   [Parameter(Mandatory=$False)]
-  [string]$ResourcesPrefix="aicorr"
+  [string]$ResourcesPrefix="aicorr2"
 )
 
 $Location = "westeurope"
