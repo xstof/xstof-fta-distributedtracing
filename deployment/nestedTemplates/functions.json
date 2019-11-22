@@ -62,6 +62,16 @@
         "metadata": {
           "description": "Name of the queue on Service Bus"
         }
+      },
+      "httpBinIp": {
+        "type": "string",
+        "metadata": {
+          "description": "Ip address of the Http Bin service to send HTTP requests to"
+        }
+      },
+      "logicAppAUrl": {
+        "type": "string",
+        "defaultValue": ""
       }
     },
     "variables": {
@@ -150,6 +160,14 @@
               {
                 "name": "serviceBusQueueName",
                 "value": "[parameters('serviceBusQueueName')]"
+              },
+              {
+                "name": "httpBinIp",
+                "value": "[parameters('httpBinIp')]"
+              },
+              {
+                "name": "logicAppAUrl",
+                "value": "[parameters('logicAppAUrl')]"
               }
             ],
             "connectionStrings": [

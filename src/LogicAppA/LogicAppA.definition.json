@@ -1,0 +1,103 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "name": {
+            "defaultValue": "xstof-aicorr2-LogicAppA",
+            "type": "string"
+        },
+        "logAnalyticsWorkspaceId": {
+            "type": "string"
+        }
+    },
+    "resources": [
+        {
+            "apiVersion": "2017-07-01",
+            "dependsOn": [
+            ],
+            "location": "westeurope",
+            "name": "[parameters('name')]",
+            "properties": {
+                "definition": {
+                    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {
+                    },
+                    "triggers": {
+                        "manual": {
+                            "inputs": {
+                                "schema": {
+                                }
+                            },
+                            "kind": "Http",
+                            "type": "Request"
+                        }
+                    },
+                    "actions": {
+                        "HTTP": {
+                            "inputs": {
+                                "method": "GET",
+                                "uri": "http://requestbin.net/r/1gkuibz1"
+                            },
+                            "runAfter": {
+                            },
+                            "type": "Http"
+                        }
+                    },
+                    "outputs": {
+                    }
+                },
+                "parameters": {
+                },
+                "state": "Enabled"
+            },
+            "scale": null,
+            "tags": {
+            },
+            "type": "Microsoft.Logic/workflows",
+            "resources": [
+                {
+                    "type": "providers/diagnosticSettings",
+                    "name": "[concat('Microsoft.Insights/', variables('logAnalyticsDiagSettingName'))]",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Logic/workflows', parameters('name'))]"
+                    ],
+                    "apiVersion": "2017-05-01-preview",
+                    "properties": {
+                        "name": "[variables('logAnalyticsDiagSettingName')]",
+                        "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+                        "logs": [
+                            {
+                                "category": "WorkflowRuntime",
+                                "enabled": true,
+                                "retentionPolicy": {
+                                    "days": 0,
+                                    "enabled": false
+                                }
+                            }
+                        ],
+                        "metrics": [
+                            {
+                                "timeGrain": "PT1M",
+                                "enabled": true,
+                                "retentionPolicy": {
+                                    "enabled": false,
+                                    "days": 0
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    ],
+    "variables": {
+        "logAnalyticsDiagSettingName": "[concat(parameters('name'), '-laconnection')]"
+    },
+    "outputs": {
+        "logicAppAUrl": {
+            "type": "string",
+            "value": "[listCallbackURL(concat(resourceId('Microsoft.Logic/workflows/', parameters('name')), '/triggers/manual'), '2016-06-01').value]"
+        }
+    }
+}

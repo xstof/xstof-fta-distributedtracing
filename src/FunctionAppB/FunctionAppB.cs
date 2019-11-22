@@ -17,8 +17,12 @@ namespace FTA.AICorrelation
     {
 
         private readonly HttpClient _httpClient;
+        private readonly string _httpBinHost;
+        private readonly string _httpBinUrl;
         public FunctionAppB(IHttpClientFactory clientFactory){
             this._httpClient = clientFactory.CreateClient();
+            this._httpBinHost = Environment.GetEnvironmentVariable("httpBinIp", EnvironmentVariableTarget.Process);
+            this._httpBinUrl = "http://requestbin.net/r/1gkuibz1";
         }
 
         [FunctionName("ReceiveFromSvcBus")]
@@ -29,8 +33,8 @@ namespace FTA.AICorrelation
             
             DumpActivity(currActivity, log);
 
-            // to see results of this call, go to: http://requestbin.net/r/14ugjfo1?inspect
-            await _httpClient.GetAsync("http://requestbin.net/r/14ugjfo1");
+            // sending to http bin container which runs in ACI
+            await _httpClient.GetAsync(_httpBinUrl);
         }
 
         private void DumpActivity(Activity act, ILogger log)
@@ -49,7 +53,7 @@ namespace FTA.AICorrelation
         }
 
         [FunctionName("SendBackHttpResponseFromB")]
-        public async Task<IActionResult> RunSendBackResp(
+        public async Task<IActionResult> RunSendBackRespFromB(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "http")] HttpRequest req,
             ILogger log)
         {
@@ -60,8 +64,8 @@ namespace FTA.AICorrelation
 
             DumpActivity(Activity.Current, log);
             
-            // to see results of this call, go to: http://requestbin.net/r/14ugjfo1?inspect
-            await _httpClient.GetAsync("http://requestbin.net/r/14ugjfo1");
+            // sending to http bin container which runs in ACI
+            await _httpClient.GetAsync(_httpBinUrl);
 
             return (ActionResult)new OkObjectResult($"");
         }

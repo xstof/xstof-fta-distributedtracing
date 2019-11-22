@@ -8,6 +8,7 @@ See:
 - http://apmtips.com/blog/2017/10/18/two-types-of-correlation/
 - https://dev.applicationinsights.io/
 - https://devblogs.microsoft.com/aspnet/improvements-in-net-core-3-0-for-troubleshooting-and-monitoring-distributed-apps/
+- https://docs.microsoft.com/en-us/azure/logic-apps/logic-apps-monitor-your-logic-apps#azure-diagnostics-event-settings-and-details
 
 ## Scenarios
 

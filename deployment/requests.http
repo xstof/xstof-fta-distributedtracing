@@ -14,8 +14,8 @@ POST http://{{host}}/api/queue/{{submissionid}} HTTP/1.1
 POST http://{{host}}/api/queue-with-bagage/{{submissionid}} HTTP/1.1
 
 ###
-GET http://{{host}}/api/http/ HTTP/1.1
+GET http://{{host}}/api/callexternalhttpurl HTTP/1.1
 
 ### 
 
-GET http://{{host}}/api/httpwithresp
+GET http://{{host}}/api/callhttpwithrespfromb

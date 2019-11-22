@@ -18,8 +18,18 @@ namespace FTA.AICorrelation
     {
 
         private readonly HttpClient _httpClient;
+        private readonly string _logicAppAUrl;
+        private readonly string _httpBinHost;
+        private readonly string _httpBinUrl;
+
         public FunctionAppA(IHttpClientFactory clientFactory){
+            // fetch url for external http req inspection service
             this._httpClient = clientFactory.CreateClient();
+            this._httpBinHost = Environment.GetEnvironmentVariable("httpBinIp", EnvironmentVariableTarget.Process);
+            this._httpBinUrl = "http://requestbin.net/r/1gkuibz1";
+
+            // fetch url for logic app A
+            this._logicAppAUrl = Environment.GetEnvironmentVariable("logicAppAUrl", EnvironmentVariableTarget.Process);
         }
 
         [FunctionName("InitiateFlowToQueue")]
@@ -80,9 +90,9 @@ namespace FTA.AICorrelation
             return (ActionResult)new OkObjectResult($"");
         }
 
-        [FunctionName("InitiateFlowToHTTP")]
+        [FunctionName("InitiateFlowToExternalHTTPUrl")]
         public async Task<IActionResult> RunHttp(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "http")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "callexternalhttpurl")] HttpRequest req,
             ILogger log)
         {
             log.LogInformation("C# InitiateFlowToHTTP HTTP trigger function processed a request.");
@@ -90,26 +100,48 @@ namespace FTA.AICorrelation
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             dynamic data = JsonConvert.DeserializeObject(requestBody);
             
-            // to see results of this call, go to: http://requestbin.net/r/1ccpqtm1?inspect
-            await _httpClient.GetAsync("http://requestbin.net/r/1ccpqtm1");
+            // sending to http bin container which runs in ACI
+            await _httpClient.GetAsync(_httpBinUrl);
 
             return (ActionResult)new OkObjectResult($"");
         }
 
-         [FunctionName("InitiateFlowToHTTPWithResponse")]
+        [FunctionName("InitiateFlowToHTTPWithResponseFromB")]
         public async Task<IActionResult> RunHttpWithResp(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "httpwithresp")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "callhttpwithrespfromb")] HttpRequest req,
             ILogger log)
         {
             log.LogInformation("C# InitiateFlowToHTTPWithResponse HTTP trigger function processed a request.");
 
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             dynamic data = JsonConvert.DeserializeObject(requestBody);
+ 
+            // Activity.Current.AddBaggage("MyCustomCorrIdInBAGGAGE", "baggagevalue");
 
             DumpActivity(Activity.Current, log);
             
-            // to see results of this call, go to: http://requestbin.net/r/1ccpqtm1?inspect
+            // send to the second function app, assuming this runs locally on port 7072
             await _httpClient.GetAsync("http://localhost:7072/api/http");
+
+            return (ActionResult)new OkObjectResult($"");
+        }
+
+        [FunctionName("InitiateFlowToLogicAppA")]
+        public async Task<IActionResult> RunCallToLogicAppA(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "calllogicappa")] HttpRequest req,
+            ILogger log)
+        {
+            log.LogInformation("C# InitiateFlowToLogicAppA HTTP trigger function processed a request.");
+
+            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+            dynamic data = JsonConvert.DeserializeObject(requestBody);
+ 
+            // Activity.Current.AddBaggage("MyCustomCorrIdInBAGGAGE", "baggagevalue");
+
+            DumpActivity(Activity.Current, log);
+            
+            // call Logic App A
+            await _httpClient.GetAsync(_logicAppAUrl);
 
             return (ActionResult)new OkObjectResult($"");
         }

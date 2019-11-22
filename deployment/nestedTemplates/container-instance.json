@@ -1,0 +1,234 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "name": {
+      "type": "string",
+      "metadata": {
+        "description": "Name for the container group"
+      },
+      "defaultValue": "acilinuxpublicipcontainergroup"
+    },
+    "image": {
+      "type": "string",
+      "metadata": {
+        "description": "Container image to deploy. Should be of the form accountName/imagename:tag for images stored in Docker Hub or a fully qualified URI for a private registry like the Azure Container Registry."
+      },
+      "defaultValue": "microsoft/aci-helloworld"
+    },
+    "port": {
+      "type": "string",
+      "metadata": {
+        "description": "Port to open on the container and the public IP address."
+      },
+      "defaultValue": "80"
+    },
+    "cpuCores": {
+      "type": "string",
+      "metadata": {
+        "description": "The number of CPU cores to allocate to the container. Must be an integer."
+      },
+      "defaultValue": "1.0"
+    },
+    "memoryInGb": {
+      "type": "string",
+      "metadata": {
+        "description": "The amount of memory to allocate to the container in gigabytes."
+      },
+      "defaultValue": "1.5"
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Location for all resources."
+      }
+    },
+    "restartPolicy": {
+      "type": "string",
+      "defaultValue": "always",
+      "metadata": {
+        "description": "The behavior of Azure runtime if container has stopped."
+      },
+      "allowedValues": [
+        "never",
+        "always",
+        "onfailure"
+      ]
+    }
+  },
+  "variables": {
+  },
+  "resources": [
+    {
+      "name": "[parameters('name')]",
+      "type": "Microsoft.ContainerInstance/containerGroups",
+      "apiVersion": "2018-10-01",
+      "location": "[parameters('location')]",
+      "properties": {
+        "containers": [
+          {
+            "name": "[parameters('name')]",
+            "properties": {
+              "image": "[parameters('image')]",
+              "ports": [
+                {
+                  "port": "[parameters('port')]"
+                }
+              ],
+              "resources": {
+                "requests": {
+                  "cpu": "[parameters('cpuCores')]",
+                  "memoryInGb": "[parameters('memoryInGb')]"
+                }
+              },
+              "command": [
+                "php",
+                "artisan",
+                "queue:work",
+                "--daemon",
+                "--tries=3",
+                "--timeout=10"
+              ] ,
+              "environmentVariables": [
+                {
+                  "name": "APP_ENV",
+                  "value": "dev"
+                },
+                {
+                  "name": "APP_DEBUG",
+                  "value": "true"
+                },
+                {
+                  "name": "APP_URL",
+                  "value": "http://localhost:80"
+                },
+                {
+                  "name": "APP_LOG",
+                  "value": "errorlog"
+                },
+                {
+                  "name": "DB_CONNECTION",
+                  "value": "sqlite"
+                },
+                {
+                  "name": "REDIS_HOST",
+                  "value": "127.0.0.1:6379"
+                },
+                {
+                  "name": "BROADCAST_DRIVER",
+                  "value": "redis"
+                },
+                {
+                  "name": "CACHE_DRIVER",
+                  "value": "redis"
+                },
+                {
+                  "name": "QUEUE_DRIVER",
+                  "value": "redis"
+                },
+                {
+                  "name": "ECHO_HOST_MODE",
+                  "value": "path"
+                }
+              ]
+            }
+          },
+          {
+            "name": "redis",
+            "properties": {
+              "image": "redis:alpine",
+              "ports": [
+                {
+                  "port": 6379
+                }
+              ],
+              "resources": {
+                "requests": {
+                  "cpu": "[parameters('cpuCores')]",
+                  "memoryInGb": "[parameters('memoryInGb')]"
+                }
+              }
+            }
+          },
+          {
+            "name": "laravel-echo-server",
+            "properties": {
+              "image": "xstof/laravel-echo-server",
+              "ports": [
+                {
+                  "port": 6001
+                }
+              ],
+              "resources": {
+                "requests": {
+                  "cpu": "[parameters('cpuCores')]",
+                  "memoryInGb": "[parameters('memoryInGb')]"
+                }
+              },
+              "environmentVariables": [
+                {
+                  "name": "LARAVEL_ECHO_SERVER_AUTH_HOST",
+                  "value": "http://webhook"
+                },
+                {
+                  "name": "LARAVEL_ECHO_SERVER_HOST",
+                  "value": "0.0.0.0"
+                },
+                {
+                  "name": "LARAVEL_ECHO_SERVER_PORT",
+                  "value": "6001"
+                },
+                {
+                  "name": "ECHO_REDIS_PORT",
+                  "value": "6379"
+                },
+                {
+                  "name": "ECHO_REDIS_HOST",
+                  "value": "0.0.0.0"
+                },
+                {
+                  "name": "ECHO_PROTOCOL",
+                  "value": "http"
+                },
+                {
+                  "name": "ECHO_ALLOW_CORS",
+                  "value": "true"
+                },
+                {
+                  "name": "ECHO_ALLOW_ORIGIN",
+                  "value": "*"
+                },
+                {
+                  "name": "ECHO_ALLOW_METHODS",
+                  "value": "*"
+                },
+                {
+                  "name": "ECHO_ALLOW_HEADERS",
+                  "value": "*"
+                }
+              ]
+            }
+          }
+        ],
+        "osType": "Linux",
+        "restartPolicy": "[parameters('restartPolicy')]",
+        "ipAddress": {
+          "type": "Public",
+          "ports": [
+            {
+              "protocol": "Tcp",
+              "port": "[parameters('port')]"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "containerIPv4Address": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.ContainerInstance/containerGroups/', parameters('name'))).ipAddress.ip]"
+    }
+  }
+}

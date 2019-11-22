@@ -25,6 +25,7 @@ az storage container create -n $NestedTemplatesStorageContainerName --account-na
 Write-Output "Storage container created"
 Write-Output "Uploading nested templates"
 az storage blob upload-batch --account-name $StorageAccountNameForNestedTemplates -d $NestedTemplatesStorageContainerName -s "./nestedTemplates" --pattern "*.json"
+az storage blob upload-batch --account-name $StorageAccountNameForNestedTemplates -d $NestedTemplatesStorageContainerName -s "../src/LogicAppA" --pattern "*.definition.json"
 Write-Output "Templates uploaded"
 
 # create sas token
