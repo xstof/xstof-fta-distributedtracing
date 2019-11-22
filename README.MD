@@ -93,12 +93,12 @@ Note: this records the custom property on the `request` telemetry item not on an
 
 The interesting properties that appear as headers on the outbound HTTP call are:
 
-| Header                   | Value                                                   | Comment                              |
-| ------------             | -----------------------------------                     | ------------------------------------ |
-| **TraceParent**          | 00-2ba1dcbb920c0c489823e86ee57e557d-82c588a5d78c3f4a-00 | is the new W3C trace context         |
-| **Request-Id**           | \|2ba1dcbb920c0c489823e86ee57e557d.82c588a5d78c3f4a.    | is the older "request-id" mechanism  |
-| **Request-Context**      | appId=cid-v1:6b06625e-3d1f-4bb4-8b50-b22b20b5a6d6       | represents the app id for AI A       |
-| X-Request-Id             | c39043fc-5693-4ca6-ba3c-56cf059acbad                    | (not important to the discussion)    | 
+| Header                   | Value                                                       | Comment                              |
+| ------------             | -----------------------------------                         | ------------------------------------ |
+| **TraceParent**          | **00-2ba1dcbb920c0c489823e86ee57e557d-82c588a5d78c3f4a-00** | is the new W3C trace context         |
+| **Request-Id**           | **\|2ba1dcbb920c0c489823e86ee57e557d.82c588a5d78c3f4a.**    | is the older "request-id" mechanism  |
+| **Request-Context**      | **appId=cid-v1:6b06625e-3d1f-4bb4-8b50-b22b20b5a6d6**       | represents the app id for AI A       |
+| X-Request-Id             | c39043fc-5693-4ca6-ba3c-56cf059acbad                        | (not important to the discussion)    | 
 
 (Note that our application id for App Insights A == 6b06625e-3d1f-4bb4-8b50-b22b20b5a6d6)
 
@@ -128,10 +128,10 @@ Dependency telemetry item:
 
 **How this works**:
 
-This means that the dependency telemetry item's `Dependency Id` is set on the outbound HTTP call's `TraceParent` and `Request-Id` so it can be picked up by the receiver.  In addition to this parent/child relation, also the identifier for the caller's App Insights resource is passed on in the HTTP call in the `Request-Context` header.  This is to enable cross-workspace discovery to power tooling with like the app map.
+This means that the dependency telemetry item's `Dependency Id` is set on the outbound HTTP call's `TraceParent` and `Request-Id` so it can be picked up by the receiver.  In addition to this parent/child relation, also the identifier for the caller's App Insights resource (**appId**) is passed on in the HTTP call in the `Request-Context` header.  This is to enable cross-workspace discovery to power tooling with like the app map.
 
 
-### Fn A -> Service Bus -> Fn B (with custom code to correlate across workspaces)
+### Fn A -> Service Bus -> Fn B (with custom code to correlate across workspaces using a custom correlation id)
 
 When using the `Activity` class to add custom properties to the recorded telemetry, one can also use the `Activity Bagage` to indicate any information to be passed on to all dependencies.  To pass on a custom property to a dependency:
 
@@ -165,6 +165,10 @@ What if FunctionB now picks up this message from the queue?  This mechanism will
 | (custom) MySubmissionIdThroughBagage      | bec20faa-9fa1-4dfc-a081-9b32a52dbdac    |
 
 Even beyond this... if FunctionB does an outbound HTTP calls, that custom metadata will also travel in the headers of such outbound call.
+
+> **Note**: the App Insights treeview and app map will still _not_ show a consolidated view out of the box when _just_ doing Fn A -> SvcBus -> Fn B.  It has no idea which workspaces to link up.  However, as soon as one does an HTTP call from Fn A to Fn B, the **appId** of both workspaces are exchanged and App Insights will start lighting up the consolidated experience!  Like this:
+>
+> ![fn-to-svcbus-to-fn-to-http](./images/fn-to-svcbus-to-fn-to-http.png)
 
 ### Using Kusto to correlate items with a custom correlation ID
 
