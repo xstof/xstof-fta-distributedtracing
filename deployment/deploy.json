@@ -29,7 +29,8 @@
         "functionAppName-B": "[concat(parameters('resourcesPrefix'), '-', 'fn-b')]",
         "appInsightsName-B": "[concat(parameters('resourcesPrefix'), '-', 'fn-appinsights-b')]",
         "logicAppName-A": "[concat(parameters('resourcesPrefix'), '-', 'logic-a')]",
-        "logicAppsLAWorkspace": "[concat(parameters('resourcesPrefix'), '-', 'logic-loganalytics')]"
+        "logicAppsLAWorkspace": "[concat(parameters('resourcesPrefix'), '-', 'logic-loganalytics')]",
+        "logAnalyticsWorkbookDisplayName": "[concat(parameters('resourcesPrefix'), '-', 'CrossComponentCorrelation')]"
     },
     "resources": [
         {
@@ -118,6 +119,29 @@
                     "name": "standalone"
                 }
             }
+        },
+        {
+            "name": "nested-loganalytics-workbook",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2016-09-01",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/nestedtemplates/workbook.json?', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "workbookSourceId": {
+                        "value": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logicAppsLAWorkspace'))]"
+                    },
+                    "workbookDisplayName": {
+                        "value": "[variables('logAnalyticsWorkbookDisplayName')]"
+                    }
+                }
+            },
+            "dependsOn": [
+                "[variables('logicAppsLAWorkspace')]"
+            ]
         },
         {
             "name": "nested-logicapp-a",

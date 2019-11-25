@@ -41,7 +41,14 @@
                             },
                             "runAfter": {
                             },
-                            "type": "Http"
+                            "type": "Http",
+                            "trackedProperties": {
+                                "Request-Context": "@trigger()['outputs']['headers']['Request-Context']",
+                                "Correlation-Context": "@trigger()['outputs']['headers']['Correlation-Context']",
+                                "Request-Id": "@trigger()['outputs']['headers']['Request-Id']",
+                                "customCorrelationId": "@trigger()['outputs']['headers']['Request-Id']",
+                                "traceparent": "@trigger()['outputs']['headers']['traceparent']"
+                            }
                         }
                     },
                     "outputs": {

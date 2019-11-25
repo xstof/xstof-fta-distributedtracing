@@ -88,7 +88,7 @@
                 "queue:work",
                 "--daemon",
                 "--tries=3",
-                "--timeout=10"
+                "--timeout=30"
               ] ,
               "environmentVariables": [
                 {
@@ -101,7 +101,7 @@
                 },
                 {
                   "name": "APP_URL",
-                  "value": "http://localhost:80"
+                  "value": "http://ipaicorr3-request-inspection.westeurope.azurecontainer.io"
                 },
                 {
                   "name": "APP_LOG",
@@ -219,8 +219,13 @@
             {
               "protocol": "Tcp",
               "port": "[parameters('port')]"
+            },
+            {
+              "protocol": "Tcp",
+              "port": "6001"
             }
-          ]
+          ],
+          "dnsNameLabel": "[concat('ip', parameters('name'))]"
         }
       }
     }

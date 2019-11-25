@@ -8,14 +8,24 @@
 @submissionid = {{$guid}}
 POST http://{{host}}/api/queue/{{submissionid}} HTTP/1.1
 
-###
 
+### USING FUNCTION A PUT A MSG ON A QUEUE TO BE PICKED UP BY FUNCTION B
 @submissionid = {{$guid}}
 POST http://{{host}}/api/queue-with-bagage/{{submissionid}} HTTP/1.1
 
-###
+
+### USING FUNCTION A CALL AN EXTERNAL HTTP ENDPOINT
 GET http://{{host}}/api/callexternalhttpurl HTTP/1.1
 
-### 
 
+
+### USING FUNCTION A CALL FUNCTION B OVER HTTP, GET A RESPONSE BACK
 GET http://{{host}}/api/callhttpwithrespfromb
+
+
+### USING FUNCTION A CALL LOGIC APP A
+GET http://{{host}}/api/calllogicappa
+
+### USING FUNCTION A CALL LOGIC APP A WiTH BAGGAGE
+
+GET http://{{host}}/api/calllogicappa/{{submissionid}}

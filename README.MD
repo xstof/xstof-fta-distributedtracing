@@ -204,3 +204,50 @@ currActivity.AddTag("MyCustomCorrId", submissionId);
 ~~~
 
 ![fn-to-svcbus-to-fn-to-http](./images/fn-to-svcbus-to-fn-to-http.png)
+
+### Function -> Logic App (no custom modifications)
+
+When function A makes a call to logic App A, the logic app manual trigger (called through an HTTP POST) will have access to the inbound headers, which it will see like:
+
+~~~json
+{
+    "headers": {
+        "Host": "prod-105.westeurope.logic.azure.com",
+        "Request-Context": "appId=cid-v1:fe4dae78-eae7-4f13-b3d3-110cc0753f65",
+        "traceparent": "00-bb375af0c4f6a24ab36915f13be7d08d-334f3f2baa66b042-00",
+        "Request-Id": "|bb375af0c4f6a24ab36915f13be7d08d.334f3f2baa66b042.",
+        "Content-Length": "0"
+    }
+}
+~~~
+
+Out of box, the logic app does nothing to put a valid correlation in Log Analytics which is usable to tie both the Function and Logic App traces together.
+
+### Function -> Logic App (custom property tracking)
+
+We can modify the logic app so that a custom property gets tracked.  
+For more information, see here: https://docs.microsoft.com/en-us/azure/logic-apps/logic-apps-monitor-your-logic-apps#azure-diagnostics-event-settings-and-details
+
+#### Querying Log Analytics for custom tracked properties
+
+In Log Analytics, you can query for `ActionCompleted` events where the tracked properties are stored:
+
+~~~kusto
+AzureDiagnostics
+| where OperationName == "Microsoft.Logic/workflows/workflowActionCompleted" 
+~~~
+
+![logic-apps-tracked-props-in-log-analytics](./images/logicapp-trackedprops-in-loganalytics.png)
+
+#### Extracting custom tracked properties in a column using Log Analytics
+
+In order to extract tracked properties, a query like the below can be used:
+
+~~~kusto
+workspace('{logAnalytics}').AzureDiagnostics
+| where OperationName == "Microsoft.Logic/workflows/workflowActionCompleted"
+| parse kind = regex trackedProperties_Correlation_Context_s with * "MyCustomCorrId=" CustomCorrId:string
+| project-reorder  CustomCorrId, trackedProperties_Correlation_Context_s
+~~~
+
+![logicapp-extract-trackedprops-in-loganalytics](./images/logicapp-extract-trackedprops-in-loganalytics.png)

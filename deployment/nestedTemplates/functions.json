@@ -163,6 +163,7 @@
               },
               {
                 "name": "httpBinIp",
+                "defaultValue": "",
                 "value": "[parameters('httpBinIp')]"
               },
               {

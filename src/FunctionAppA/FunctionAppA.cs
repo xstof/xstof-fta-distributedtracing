@@ -136,12 +136,35 @@ namespace FTA.AICorrelation
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             dynamic data = JsonConvert.DeserializeObject(requestBody);
  
-            // Activity.Current.AddBaggage("MyCustomCorrIdInBAGGAGE", "baggagevalue");
+            Activity.Current.AddBaggage("MyCustomCorrId", "baggagevalue");
 
             DumpActivity(Activity.Current, log);
             
             // call Logic App A
-            await _httpClient.GetAsync(_logicAppAUrl);
+            await _httpClient.PostAsync(_logicAppAUrl, null);
+
+            return (ActionResult)new OkObjectResult($"");
+        }
+
+        [FunctionName("InitiateFlowToLogicAppAWithBaggage")]
+        public async Task<IActionResult> RunCallToLogicAppAWithBaggage(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "calllogicappa/{submissionId}")] HttpRequest req,
+            string submissionId,
+            ILogger log)
+        {
+            log.LogInformation("C# InitiateFlowToLogicAppAWithBaggage HTTP trigger function processed a request.");
+
+            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+            dynamic data = JsonConvert.DeserializeObject(requestBody);
+ 
+            Activity.Current.AddTag("MyCustomCorrId", submissionId);
+            Activity.Current.AddBaggage("MyCustomCorrId", submissionId);
+            Activity.Current.AddBaggage("SomethingElse", "test123");
+
+            DumpActivity(Activity.Current, log);
+            
+            // call Logic App A
+            await _httpClient.PostAsync(_logicAppAUrl, null);
 
             return (ActionResult)new OkObjectResult($"");
         }
