@@ -251,3 +251,174 @@ workspace('{logAnalytics}').AzureDiagnostics
 ~~~
 
 ![logicapp-extract-trackedprops-in-loganalytics](./images/logicapp-extract-trackedprops-in-loganalytics.png)
+
+#### Correlating all Logic Apps Actions when correlation ids are just tracked on a single Action
+
+In the end, one will want to retrieve the telemetry for all Logic Apps action that belong to the same run, even if custom tracked (correlation) properties were just tracked on a single action.
+
+The raw logic apps diagnostics table looks like this:
+
+~~~kusto
+let LogicAppsDiagsRaw = 
+  workspace('{logAnalytics}').AzureDiagnostics
+  | project-reorder startTime_t, status_s, OperationName, trackedProperties_Correlation_Context_s, trackedProperties_Request_Id_s, resource_runId_s;
+LogicAppsDiagsRaw
+~~~
+
+![logicapp-corr-stamping-logicappsdiagsraw](./images/logicapp-corr-stamping-logicappsdiagsraw.png)
+
+As demonstrated by above picture, there is only some entries that have a `trackedProperties_Correlation_Context_s` or `trackedProperties_Request_Id_s`.  Eventually though, one will want to be able to query for all the Logic Apps Actions that belong to the same run which is associated with a given correlation id.  In this example, that correlation id however is only tracked by a single activity within the run.  This means we'll need to find a way to "stamp" those correlation identifiers on all action telemetry.
+
+First, we'll need to:
+- look at the `workflowActionCompleted` entries which are the only ones which have tracked properties stored upon them
+- then extract our custom correlation id from the Correlation Context column
+- we'll also want to have an `id` column which uniquely identifies each Action
+- finally we'll want to have a `operation_ParentId` similar to the output we typically see from App Insights so it becomes easier to union these tables later on
+
+Like this:
+
+~~~kusto
+let LogicAppsActionCompletedDiag = 
+  LogicAppsDiagsRaw
+  | where OperationName == "Microsoft.Logic/workflows/workflowActionCompleted"
+  | parse kind = regex trackedProperties_Correlation_Context_s with * "MyCustomCorrId=" MyCustomCorrId:string
+  | extend id=resource_runId_s
+  | project-rename operation_ParentId=trackedProperties_Request_Id_s
+  | project-reorder  MyCustomCorrId, operation_ParentId, trackedProperties_Correlation_Context_s;
+LogicAppsActionCompletedDiag
+~~~
+
+![logicapp-corr-stamping-logicappsactioncompleteddiag](./images/logicapp-corr-stamping-logicappsactioncompleteddiag.png)
+
+Now, we first create a lookup table, which maps each Logic App Run identifier to our custom correlation id and the `operation_ParentId` (which is coming from `trackedProperties_Request_Id_s`).  As follows:
+
+~~~kusto
+let MyCustomCorrIdMappingToResourceRunId = 
+  LogicAppsActionCompletedDiag | where MyCustomCorrId != '' | distinct MyCustomCorrId, resource_runId_s, operation_ParentId;
+MyCustomCorrIdMappingToResourceRunId
+~~~
+
+![logicapp-corr-stamping-mycustomcorridmappingtoresourcerunid](./images/logicapp-corr-stamping-mycustomcorridmappingtoresourcerunid.png)
+
+If we now have a `resource_runId_s` (which is available on every Action telemetry row), we can easily look up both the associated custom correlation id _and_ the `operation_ParentId`.  We can easily do this using the `lookup` function, for every single row in the raw Logic Apps Diagnostics table:
+
+~~~kusto
+let LogicAppsDiagsWithCustomCorrIdStamped = 
+  LogicAppsDiagsRaw
+  | lookup kind=leftouter MyCustomCorrIdMappingToResourceRunId on resource_runId_s
+  | project-reorder MyCustomCorrId, resource_runId_s, trackedProperties_Correlation_Context_s, operation_ParentId, trackedProperties_Request_Id_s;
+LogicAppsDiagsWithCustomCorrIdStamped
+~~~
+
+![logicapp-corr-stamping-logicappsdiagswithcustomcorridstamped](./images/logicapp-corr-stamping-logicappsdiagswithcustomcorridstamped.png)
+
+With a bit more ordering and cosmetics the entire query looks like this:
+
+~~~kusto
+let LogicAppsDiagsRaw = 
+  workspace('{logAnalytics}').AzureDiagnostics
+  | project-reorder startTime_t, status_s, OperationName, trackedProperties_Correlation_Context_s, trackedProperties_Request_Id_s, resource_runId_s;
+let LogicAppsActionCompletedDiag = 
+  LogicAppsDiagsRaw
+  | where OperationName == "Microsoft.Logic/workflows/workflowActionCompleted"
+  | parse kind = regex trackedProperties_Correlation_Context_s with * "MyCustomCorrId=" MyCustomCorrId:string
+  | extend id=resource_runId_s
+  | project-rename operation_ParentId=trackedProperties_Request_Id_s
+  | project-reorder  MyCustomCorrId, operation_ParentId, trackedProperties_Correlation_Context_s;
+let MyCustomCorrIdMappingToResourceRunId = 
+  LogicAppsActionCompletedDiag | where MyCustomCorrId != '' | distinct MyCustomCorrId, resource_runId_s, operation_ParentId;
+let LogicAppsDiagsWithCustomCorrIdStamped = 
+  LogicAppsDiagsRaw
+  | lookup kind=leftouter MyCustomCorrIdMappingToResourceRunId on resource_runId_s
+  | project-reorder MyCustomCorrId, resource_runId_s, trackedProperties_Correlation_Context_s, operation_ParentId, trackedProperties_Request_Id_s;
+let AllLogicActionsWithFilledCorrelationIds =
+  LogicAppsDiagsWithCustomCorrIdStamped
+  | extend id=resource_runId_s
+  | project-reorder  MyCustomCorrId, operation_ParentId, resource_runId_s, operation_ParentId, trackedProperties_Correlation_Context_s;
+AllLogicActionsWithFilledCorrelationIds
+~~~
+
+## Visualization using Log Analytics Workbooks
+
+Where the built-in visualization and default queries of both Log Analytics and App Insights might fall a bit short for doing end to end correlation across a variety of resource types, Log Analytics Workbooks might be able to help.
+
+### Using a treeview to visualize distributed traces across App Insights resources
+
+Using a query like this:
+
+~~~kusto
+let allApps = union app('{appInsightsA}').requests, app('{appInsightsB}').requests,
+              app('{appInsightsA}').dependencies, app('{appInsightsB}').dependencies,
+              app('{appInsightsA}').exceptions, app('{appInsightsB}').exceptions,
+              app('{appInsightsA}').traces, app('{appInsightsB}').traces,
+              app('{appInsightsA}').customEvents, app('{appInsightsB}').customEvents;
+allApps 
+| extend MyCustomCorrId = tostring(customDimensions.MyCustomCorrId) 
+| where  MyCustomCorrId == "{corrid}"
+| extend message_or_name = strcat(message, name)
+| project-reorder timestamp, itemType, id, operation_ParentId, message_or_name, appId
+| project-away problemId, handledAt, assembly, method, outerType, outerMessage, outerAssembly, outerMethod, innermostType, innermostMessage, innermostAssembly, innermostMethod, client_City, client_StateOrProvince, client_CountryOrRegion, client_Browser, cloud_RoleName, cloud_RoleInstance, client_Model, client_OS, operation_SyntheticSource, session_Id, user_Id, user_AuthenticatedId, user_AccountId, application_Version, client_Type, message, name
+| order by timestamp asc
+~~~
+
+and configuring the workbook to visualize the table columns as follows:
+
+![workbook-treeview-colsettings](./images/workbook-treeview-colsettings.png)
+
+will provide us with the ability to see a full treeview of our distributed trace.  In this particular case, we're looking at a trace that spans:
+- a request coming in on Function App A
+- which sends a message to Service Bus
+- which gets picked up by Function App B
+- which does an HTTP call to some external system
+
+![workbook-treeview-results-without-logic-apps](./images/workbook-treeview-results-without-logic-apps.png)
+
+### Extending a distributed trace treeview with Action telemetry from Logic Apps
+
+Building upon the previous treeview, we can extend our query to include data from Logic Apps.
+
+~~~kusto
+let allApps = union app('{appInsightsA}').requests, app('{appInsightsB}').requests,
+              app('{appInsightsA}').dependencies, app('{appInsightsB}').dependencies,
+              app('{appInsightsA}').exceptions, app('{appInsightsB}').exceptions,
+              app('{appInsightsA}').traces, app('{appInsightsB}').traces,
+              app('{appInsightsA}').customEvents, app('{appInsightsB}').customEvents;
+let LogicAppsDiagsRaw = 
+  workspace('{logAnalytics}').AzureDiagnostics
+  | project-reorder startTime_t, status_s, OperationName, trackedProperties_Correlation_Context_s, trackedProperties_Request_Id_s, resource_runId_s;
+let LogicAppsActionCompletedDiag = 
+  LogicAppsDiagsRaw
+  | where OperationName == "Microsoft.Logic/workflows/workflowActionCompleted"
+  | parse kind = regex trackedProperties_Correlation_Context_s with * "MyCustomCorrId=" MyCustomCorrId:string
+  // NOTE: id _needs_ to be unique for treeview to be displayed correctly
+  | extend id=strcat(resource_runId_s, Resource, OperationName) 
+  | project-rename operation_ParentId=trackedProperties_Request_Id_s
+  | project-reorder  MyCustomCorrId, operation_ParentId, trackedProperties_Correlation_Context_s;
+let MyCustomCorrIdMappingToResourceRunId = 
+  LogicAppsActionCompletedDiag | where MyCustomCorrId != '' | distinct MyCustomCorrId, resource_runId_s, operation_ParentId;
+let LogicAppsDiagsWithCustomCorrIdStamped = 
+  LogicAppsDiagsRaw
+  | lookup kind=leftouter MyCustomCorrIdMappingToResourceRunId on resource_runId_s
+  | project-reorder MyCustomCorrId, resource_runId_s, trackedProperties_Correlation_Context_s, operation_ParentId, trackedProperties_Request_Id_s;
+let AllLogicActionsWithFilledCorrelationIds =
+  LogicAppsDiagsWithCustomCorrIdStamped
+  // NOTE: id _needs_ to be unique for treeview to be displayed correctly
+  | extend id=strcat(resource_runId_s, Resource, OperationName), timestamp=startTime_t
+  | project-reorder  MyCustomCorrId, operation_ParentId, resource_runId_s, trackedProperties_Correlation_Context_s;
+let fullTreeView =
+  allApps 
+  | extend MyCustomCorrId = tostring(customDimensions.MyCustomCorrId) 
+  | extend message_or_name = strcat(message, name)
+  | union (
+     AllLogicActionsWithFilledCorrelationIds
+     | extend itemType = 'workflowAction'
+     | extend message_or_name = strcat(trim_start('Microsoft.Logic/workflows/workflow', OperationName), ' - ', Resource, ' ', error_message_s)
+  )
+  | where  MyCustomCorrId == "{corrid}"
+  | project-reorder timestamp, itemType, id, operation_ParentId, message_or_name, appId
+  | project-away problemId, handledAt, assembly, method, outerType, outerMessage, outerAssembly, outerMethod, innermostType, innermostMessage, innermostAssembly, innermostMethod, client_City, client_StateOrProvince, client_CountryOrRegion, client_Browser, cloud_RoleName, cloud_RoleInstance, client_Model, client_OS, operation_SyntheticSource, session_Id, user_Id, user_AuthenticatedId, user_AccountId, application_Version, client_Type, message, name
+  | order by timestamp asc;
+fullTreeView
+~~~
+
+![workbook-treeview-logic-apps-integrated.png](./images/workbook-treeview-logic-apps-integrated.png)
