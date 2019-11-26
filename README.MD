@@ -353,12 +353,13 @@ let allApps = union app('{appInsightsA}').requests, app('{appInsightsB}').reques
               app('{appInsightsA}').traces, app('{appInsightsB}').traces,
               app('{appInsightsA}').customEvents, app('{appInsightsB}').customEvents;
 allApps 
-| extend MyCustomCorrId = tostring(customDimensions.MyCustomCorrId) 
-| where  MyCustomCorrId == "{corrid}"
-| extend message_or_name = strcat(message, name)
-| project-reorder timestamp, itemType, id, operation_ParentId, message_or_name, appId
-| project-away problemId, handledAt, assembly, method, outerType, outerMessage, outerAssembly, outerMethod, innermostType, innermostMessage, innermostAssembly, innermostMethod, client_City, client_StateOrProvince, client_CountryOrRegion, client_Browser, cloud_RoleName, cloud_RoleInstance, client_Model, client_OS, operation_SyntheticSource, session_Id, user_Id, user_AuthenticatedId, user_AccountId, application_Version, client_Type, message, name
-| order by timestamp asc
+  | extend MyCustomCorrId = tostring(customDimensions.MyCustomCorrId) 
+  | extend message_or_name = strcat(message, name)
+  | extend id = iif(id == '', tostring(new_guid()), id) // make sure id is unique (if not table will not be displayed correctly)
+  | where  MyCustomCorrId == "{corrid}"
+  | project-reorder timestamp, itemType, id, operation_ParentId, message_or_name, appId
+  | project-away problemId, handledAt, assembly, method, outerType, outerMessage, outerAssembly, outerMethod, innermostType, innermostMessage, innermostAssembly, innermostMethod, client_City, client_StateOrProvince, client_CountryOrRegion, client_Browser, cloud_RoleName, cloud_RoleInstance, client_Model, client_OS, operation_SyntheticSource, session_Id, user_Id, user_AuthenticatedId, user_AccountId, application_Version, client_Type, message, name
+  | order by timestamp asc;
 ~~~
 
 and configuring the workbook to visualize the table columns as follows:
@@ -390,8 +391,7 @@ let LogicAppsActionCompletedDiag =
   LogicAppsDiagsRaw
   | where OperationName == "Microsoft.Logic/workflows/workflowActionCompleted"
   | parse kind = regex trackedProperties_Correlation_Context_s with * "MyCustomCorrId=" MyCustomCorrId:string
-  // NOTE: id _needs_ to be unique for treeview to be displayed correctly
-  | extend id=strcat(resource_runId_s, Resource, OperationName) 
+  | extend id=strcat(resource_runId_s, Resource, OperationName)
   | project-rename operation_ParentId=trackedProperties_Request_Id_s
   | project-reorder  MyCustomCorrId, operation_ParentId, trackedProperties_Correlation_Context_s;
 let MyCustomCorrIdMappingToResourceRunId = 
@@ -402,7 +402,6 @@ let LogicAppsDiagsWithCustomCorrIdStamped =
   | project-reorder MyCustomCorrId, resource_runId_s, trackedProperties_Correlation_Context_s, operation_ParentId, trackedProperties_Request_Id_s;
 let AllLogicActionsWithFilledCorrelationIds =
   LogicAppsDiagsWithCustomCorrIdStamped
-  // NOTE: id _needs_ to be unique for treeview to be displayed correctly
   | extend id=strcat(resource_runId_s, Resource, OperationName), timestamp=startTime_t
   | project-reorder  MyCustomCorrId, operation_ParentId, resource_runId_s, trackedProperties_Correlation_Context_s;
 let fullTreeView =
@@ -415,6 +414,7 @@ let fullTreeView =
      | extend message_or_name = strcat(trim_start('Microsoft.Logic/workflows/workflow', OperationName), ' - ', Resource, ' ', error_message_s)
   )
   | where  MyCustomCorrId == "{corrid}"
+  | extend id = iif(id == '', tostring(new_guid()), id) // make sure id is unique (if not table will not be displayed correctly)
   | project-reorder timestamp, itemType, id, operation_ParentId, message_or_name, appId
   | project-away problemId, handledAt, assembly, method, outerType, outerMessage, outerAssembly, outerMethod, innermostType, innermostMessage, innermostAssembly, innermostMethod, client_City, client_StateOrProvince, client_CountryOrRegion, client_Browser, cloud_RoleName, cloud_RoleInstance, client_Model, client_OS, operation_SyntheticSource, session_Id, user_Id, user_AuthenticatedId, user_AccountId, application_Version, client_Type, message, name
   | order by timestamp asc;
