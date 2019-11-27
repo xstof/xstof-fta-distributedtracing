@@ -11,6 +11,7 @@ using Microsoft.Azure.ServiceBus;
 using System.Text;
 using System.Diagnostics;
 using System.Net.Http;
+using System.Net.Http.Headers;
 
 namespace FTA.AICorrelation
 {
@@ -26,7 +27,7 @@ namespace FTA.AICorrelation
             // fetch url for external http req inspection service
             this._httpClient = clientFactory.CreateClient();
             this._httpBinHost = Environment.GetEnvironmentVariable("httpBinIp", EnvironmentVariableTarget.Process);
-            this._httpBinUrl = "http://requestbin.net/r/1gkuibz1";
+            this._httpBinUrl = "http://requestbin.net/r/10opbi51";
 
             // fetch url for logic app A
             this._logicAppAUrl = Environment.GetEnvironmentVariable("logicAppAUrl", EnvironmentVariableTarget.Process);
@@ -163,8 +164,10 @@ namespace FTA.AICorrelation
 
             DumpActivity(Activity.Current, log);
             
-            // call Logic App A
-            await _httpClient.PostAsync(_logicAppAUrl, null);
+            // call Logic App A - pass on the body content of what came in
+            var objectContent = new StringContent(requestBody);
+            objectContent.Headers.ContentType = MediaTypeHeaderValue.Parse("application/json");
+            await _httpClient.PostAsync(_logicAppAUrl, objectContent);
 
             return (ActionResult)new OkObjectResult($"");
         }

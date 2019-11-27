@@ -26,6 +26,28 @@ GET http://{{host}}/api/callhttpwithrespfromb
 ### USING FUNCTION A CALL LOGIC APP A
 GET http://{{host}}/api/calllogicappa
 
+
 ### USING FUNCTION A CALL LOGIC APP A WiTH BAGGAGE
+# GET http://{{host}}/api/calllogicappa/{{submissionid}}
+
+
+### USING FUNCTION A CALL LOGIC APP A WiTH BAGGAGE AND CONTENT; LOGIC APP TO CALL INTO A URL
 
 GET http://{{host}}/api/calllogicappa/{{submissionid}}
+content-type: application/json
+
+{
+    "logicAppAction": "callIntoUrl",
+    "url": "http://requestbin.net/r/10opbi51"
+}
+
+### USING FUNCTION A CALL LOGIC APP A WiTH BAGGAGE AND CONTENT; LOGIC APP TO CALL INTO A FUNCTION
+
+GET http://{{host}}/api/calllogicappa/{{submissionid}}
+content-type: application/json
+
+{
+    "logicAppAction": "callIntoUrl",
+    "url": "http://www.microsoft.com"
+}
+
