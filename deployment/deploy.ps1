@@ -3,11 +3,17 @@ Param(
   [Parameter(Mandatory=$True)]
   [string]$RG,
 
+  
+  [Paremeter(Madatory=$True)]
+  [string]$Location="westeurope",
+
   [Parameter(Mandatory=$False)]
   [string]$ResourcesPrefix="aicorr2"
 )
 
-$Location = "westeurope"
+#az login
+
+
 $StorageAccountNameForNestedTemplates = "$($ResourcesPrefix)storacct"
 $NestedTemplatesStorageContainerName = "nestedtemplates"
 
@@ -38,3 +44,5 @@ $NestedTemplatesLocation = "https://$StorageAccountNameForNestedTemplates.blob.c
 $templateFile = "deploy.json"
 
 az group deployment create -n "appinsights-corrtest-deployment" -g $RG --template-file "$templateFile" --parameters _artifactsLocation=$NestedTemplatesLocation _artifactsLocationSasToken=$SasTokenForNestedTemplates resourcesPrefix=$ResourcesPrefix
+
+write-host "Information: Run deploy-func-code.ps1 to deploy function app code" -ForegroundColor Green
