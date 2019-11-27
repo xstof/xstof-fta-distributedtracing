@@ -18,7 +18,7 @@ CompressionLevel = "Fastest"
 DestinationPath = "FunctionAppA.zip"
 }
 Compress-Archive @compress -Force
-$funcAname = "$ResourcesPrefix" + "fn-a"
+$funcAname = "$ResourcesPrefix" + "-fn-a"
 az functionapp deployment source config-zip  -g $RG -n $funcAname --src "FunctionAppA.zip"
 
 write-host "published function app A" -ForegroundColor Green
@@ -30,7 +30,7 @@ CompressionLevel = "Fastest"
 DestinationPath = "FunctionAppB.zip"
 }
 Compress-Archive @compress -Force
-$funcBname = $ResourcesPrefix + "fn-b"
+$funcBname = $ResourcesPrefix + "-fn-b"
 az functionapp deployment source config-zip  -g $RG -n $funcBname --src "FunctionAppB.zip"
 
 write-host "published function app B" -ForegroundColor Green

@@ -1,38 +1,40 @@
-@hostname = begim-fn-a.azurewebsites.net
+@hostnamea = aicorr3-fn-a.azurewebsites.net
+@hostnameb = aicorr3-fn-b.azurewebsites.net
 ## if needed declare host and port e.g. localhost:8080
-@host = {{hostname}}
+@hosta = {{hostnamea}}
+@hostb = {{hostnameb}}
 @contentType = application/json
 @protocol = https
 
 @submissionid = {{$guid}}
-POST {{protocol}}://{{host}}/api/queue/{{submissionid}} HTTP/1.1
+POST {{protocol}}://{{hosta}}/api/queue/{{submissionid}} HTTP/1.1
 
 
 ### USING FUNCTION A PUT A MSG ON A QUEUE TO BE PICKED UP BY FUNCTION B
 @submissionid = {{$guid}}
-POST {{protocol}}://{{host}}/api/queue-with-bagage/{{submissionid}} HTTP/1.1
+POST {{protocol}}://{{hosta}}/api/queue-with-bagage/{{submissionid}} HTTP/1.1
 
 
 ### USING FUNCTION A CALL AN EXTERNAL HTTP ENDPOINT
-GET {{protocol}}://{{host}}/api/callexternalhttpurl HTTP/1.1
+GET {{protocol}}://{{hosta}}/api/callexternalhttpurl HTTP/1.1
 
 
 
 ### USING FUNCTION A CALL FUNCTION B OVER HTTP, GET A RESPONSE BACK
-GET {{protocol}}://{{host}}/api/callhttpwithrespfromb
+GET {{protocol}}://{{hosta}}/api/callhttpwithrespfromb
 
 
 ### USING FUNCTION A CALL LOGIC APP A
-GET {{protocol}}://{{host}}/api/calllogicappa
+GET {{protocol}}://{{hosta}}/api/calllogicappa
 
 
 ### USING FUNCTION A CALL LOGIC APP A WiTH BAGGAGE
-# GET http://{{host}}/api/calllogicappa/{{submissionid}}
+# GET http://{{hosta}}/api/calllogicappa/{{submissionid}}
 
 
 ### USING FUNCTION A CALL LOGIC APP A WiTH BAGGAGE AND CONTENT; LOGIC APP TO CALL INTO A URL
 
-GET http://{{host}}/api/calllogicappa/{{submissionid}}
+GET http://{{hosta}}/api/calllogicappa/{{submissionid}}
 content-type: application/json
 
 {
@@ -42,12 +44,12 @@ content-type: application/json
 
 ### USING FUNCTION A CALL LOGIC APP A WiTH BAGGAGE AND CONTENT; LOGIC APP TO CALL INTO A FUNCTION
 
-GET http://{{host}}/api/calllogicappa/{{submissionid}}
+GET http://{{hosta}}/api/calllogicappa/{{submissionid}}
 content-type: application/json
 
 {
     "logicAppAction": "callIntoUrl",
-    "url": "http://www.microsoft.com"
+    "url": "http://{{hostb}}/api/http"
 }
 
-GET {{protocol}}://{{host}}/api/calllogicappa/{{submissionid}}
+GET {{protocol}}://{{hosta}}/api/calllogicappa/{{submissionid}}
