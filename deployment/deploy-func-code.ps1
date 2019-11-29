@@ -9,6 +9,7 @@ Param(
 
 #az login
 
+## function App SA
 
 ## build, publish, zip and deploy functions via the cli - function name hard coded here and in the function nested ARM deploy template
 dotnet publish "..\src\functionAppA\FunctionAppA.csproj"
@@ -22,6 +23,8 @@ $funcAname = "$ResourcesPrefix" + "-fn-a"
 az functionapp deployment source config-zip  -g $RG -n $funcAname --src "FunctionAppA.zip"
 
 write-host "published function app A" -ForegroundColor Green
+
+## function App B
 
 dotnet publish "..\src\functionAppB\FunctionAppB.csproj"
 $compress = @{

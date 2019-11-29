@@ -33,18 +33,31 @@ if ( $storAccountStatus.nameAvailable -eq $true )
     az storage account create -g $RG -n $StorageAccountNameForNestedTemplates -l $Location --sku Standard_LRS
 } elseif ( $storAccountStatus.reason -eq 'AlreadyExists' ) 
 {
-    write-host "storage account already exists, moving on"
+    write-host "storage account already exists, moving on" -ForegroundColor Yellow
 } else {
     write-host "something went wrong, storage account name $StorageAccountNameForNestedTemplates unavailable?" -ForegroundColor Red
     exit
 }
 
+#fixup workbook references
+$azsubscription= az account show | ConvertFrom-Json
+$SubId = $azsubscription.Id
+$workbookpath = ".\nestedTemplates\workbook.json"
+(Get-Content -path $workbookpath -Raw) -replace `
+  "/subscriptions/651dc44c-5d8e-48da-8cd3-cd79224ac290/resourceGroups/xstof-aicorr3/providers" `
+  ,"/subscriptions/$SubId/resourceGroups/$RG/providers" `
+  | Set-Content -Path $workbookpath
+
+$workbookpath = ".\nestedTemplates\workbook.json"
+(Get-Content -path $workbookpath -Raw) -replace `
+  "aicorr3" ,$ResourcesPrefix | Set-Content -Path $workbookpath
 
 # upload nested templates
 
 $containerExists = az storage container exists --account-name $StorageAccountNameForNestedTemplates --name $NestedTemplatesStorageContainerName | ConvertFrom-Json
 if ( $containerExists.exists -eq $false ) {
     #remove existing so can upload updated
+    write-host "removing existing container" -ForegroundColor Yellow
     az storage container delete --account-name $StorageAccountNameForNestedTemplates --name $NestedTemplatesStorageContainerName
 }
 
