@@ -184,17 +184,21 @@ namespace FTA.AICorrelation
         
         private void DumpActivity(Activity act, ILogger log)
         {
-            Console.WriteLine($"Activity id: {act.Id}");
-            Console.WriteLine($"Activity operation name: {act.OperationName}");
-            Console.WriteLine($"Activity parent: {act.Parent}");
-            Console.WriteLine($"Activity parent id: {act.ParentId}");
-            Console.WriteLine($"Activity root id: {act.RootId}");
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine($"Activity id: {act.Id}");
+            sb.AppendLine($"Activity operation name: {act.OperationName}");
+            sb.AppendLine($"Activity parent: {act.Parent}");
+            sb.AppendLine($"Activity parent id: {act.ParentId}");
+            sb.AppendLine($"Activity root id: {act.RootId}");
             foreach(var tag in act.Tags){
-                Console.WriteLine($"  - Activity tag: {tag.Key}: {tag.Value}");
+                sb.AppendLine($"  - Activity tag: {tag.Key}: {tag.Value}");
             }
             foreach(var bag in act.Baggage){
-                Console.WriteLine($"  - Activity baggage: {bag.Key}: {bag.Value}");
+                sb.AppendLine($"  - Activity baggage: {bag.Key}: {bag.Value}");
             }
+
+            Console.WriteLine(sb.ToString());
+            log.LogInformation(sb.ToString());
         }
     }
 }
