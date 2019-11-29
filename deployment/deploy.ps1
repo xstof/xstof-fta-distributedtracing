@@ -17,18 +17,53 @@ $StorageAccountNameForNestedTemplates = "$($ResourcesPrefix)storacct"
 $NestedTemplatesStorageContainerName = "nestedtemplates"
 
 # create RG
-az group create -n $RG -l $Location
+$rgExists = az group exists -n $RG
+if ( $rgExists -eq $False ){
+    Write-Output "Creating RG"
+  az group create -n $RG -l $Location
+}
+
 
 # create storage account in RG to deploy nested templates towards
-Write-Output "Creating Storage Account for storing nested arm templates"
-az storage account create -g $RG -n $StorageAccountNameForNestedTemplates -l $Location --sku Standard_LRS
-Write-Output "Storage Account created"
+$storAccountStatus=az storage account check-name --name $StorageAccountNameForNestedTemplates | ConvertFrom-Json
+if ( $storAccountStatus.nameAvailable -eq $true )
+{
+    Write-Output "Creating Storage Account for storing nested arm templates"
+    az storage account create -g $RG -n $StorageAccountNameForNestedTemplates -l $Location --sku Standard_LRS
+} elseif ( $storAccountStatus.reason -eq 'AlreadyExists' ) 
+{
+    write-host "storage account already exists, moving on" -ForegroundColor Yellow
+} else {
+    write-host "something went wrong, storage account name $StorageAccountNameForNestedTemplates unavailable?" -ForegroundColor Red
+    exit
+}
+
+#fixup workbook references
+$azsubscription= az account show | ConvertFrom-Json
+$SubId = $azsubscription.Id
+$workbookpath = ".\nestedTemplates\workbook.json"
+(Get-Content -path $workbookpath -Raw) -replace `
+  "/subscriptions/651dc44c-5d8e-48da-8cd3-cd79224ac290/resourceGroups/xstof-aicorr3/providers" `
+  ,"/subscriptions/$SubId/resourceGroups/$RG/providers" `
+  | Set-Content -Path $workbookpath
+
+$workbookpath = ".\nestedTemplates\workbook.json"
+(Get-Content -path $workbookpath -Raw) -replace `
+  "aicorr3" ,$ResourcesPrefix | Set-Content -Path $workbookpath
 
 # upload nested templates
+
+$containerExists = az storage container exists --account-name $StorageAccountNameForNestedTemplates --name $NestedTemplatesStorageContainerName | ConvertFrom-Json
+if ( $containerExists.exists -eq $false ) {
+    #remove existing so can upload updated
+    write-host "removing existing container" -ForegroundColor Yellow
+    az storage container delete --account-name $StorageAccountNameForNestedTemplates --name $NestedTemplatesStorageContainerName
+}
+
 Write-Output "Creating storage container for nested templates: '$NestedTemplatesStorageContainerName'"
 az storage container create -n $NestedTemplatesStorageContainerName --account-name $StorageAccountNameForNestedTemplates
-Write-Output "Storage container created"
-Write-Output "Uploading nested templates"
+
+Write-Output "Uploading nested template to container"
 az storage blob upload-batch --account-name $StorageAccountNameForNestedTemplates -d $NestedTemplatesStorageContainerName -s "./nestedTemplates" --pattern "*.json"
 az storage blob upload-batch --account-name $StorageAccountNameForNestedTemplates -d $NestedTemplatesStorageContainerName -s "../src/LogicAppA" --pattern "*.definition.json"
 Write-Output "Templates uploaded"

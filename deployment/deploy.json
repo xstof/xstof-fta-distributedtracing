@@ -22,6 +22,7 @@
         "aciName": "[concat(parameters('resourcesPrefix'), '-', 'request-inspection')]",
         "aciImage": "xstof/webhook.site",
         "aciImagePort": "80",
+        "eventGridTopicName": "[concat(parameters('resourcesPrefix'), '-', 'egtopic')]",
         "serviceBusNSName": "[concat(parameters('resourcesPrefix'), '-', 'svcbusns')]",
         "serviceBusQueueName": "[concat(parameters('resourcesPrefix'), '-', 'svcbusqueue')]",
         "functionAppName-A": "[concat(parameters('resourcesPrefix'), '-', 'fn-a')]",
@@ -33,6 +34,12 @@
         "logAnalyticsWorkbookDisplayName": "[concat(parameters('resourcesPrefix'), '-', 'CrossComponentCorrelation')]"
     },
     "resources": [
+        {
+            "name": "[variables('eventGridTopicName')]",
+            "type": "Microsoft.EventGrid/topics",
+             "location": "[resourceGroup().location]",
+            "apiVersion": "2018-01-01"
+        },
         {
             "name": "nested-httpbin-aci-container",
             "type": "Microsoft.Resources/deployments",

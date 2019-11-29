@@ -5,9 +5,7 @@
 @hostb = {{hostnameb}}
 @contentType = application/json
 @protocol = https
-
 @submissionid = {{$guid}}
-POST {{protocol}}://{{hosta}}/api/queue/{{submissionid}} HTTP/1.1
 
 
 ### USING FUNCTION A PUT A MSG ON A QUEUE TO BE PICKED UP BY FUNCTION B
@@ -53,3 +51,30 @@ content-type: application/json
 }
 
 GET {{protocol}}://{{hosta}}/api/calllogicappa/{{submissionid}}
+
+### test event grid function for functionappA
+@rg = xstof
+@subscriptionid =09a55fcd-23ab-4b16-98b7-c17f85e641d5
+@resourceprefix = begim
+@eventId = {{$guid}}
+
+POST https://{{resourceprefix}}-egtopic.northeurope-1.eventgrid.azure.net/api/events
+Content-Type: application/json
+aeg-event-type: Notification
+aeg-sas-key: /q94V0gMByVR6T2HSW21Fq7Xl7EHhBfbrpvOuFoMFS0=
+
+[
+  {
+    "topic": "/subscriptions/{{subscriptionid}}/resourceGroups/{{rg}}/providers/Microsoft.EventGrid/topics/begim-egtopic",
+    "subject": "test",
+    "id": "{{eventId}}",
+    "eventType": "test",
+    "eventTime": "{{$localDatetime iso8601}}",
+    "data":{
+      "propertyA":"test"
+    },
+    "dataVersion": "1.0",
+    "metadataVersion": "1"
+  }
+]
+
