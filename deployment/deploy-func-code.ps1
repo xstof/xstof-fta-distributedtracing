@@ -38,11 +38,28 @@ write-host "published function app B" -ForegroundColor Green
 ## create a subscription for the demo event grid and functionA => ConsunmeEventGridEvent function
 ##get a key
 $topicName = $ResourcesPrefix + "-egtopic"
-#$key=az eventgrid topic key list --name $topicName -g $RG --query "key1" --output tsv 
-#$endpoint=az eventgrid topic show --name $topicName -g $RG --query "endpoint" --output tsv
+$egsubname = "funcAppAegSub"
 $azsubscription= az account show | ConvertFrom-Json
-# get master key to get sys key
-$masterKey=""
-$sysKey=""
-$funcEndpoint = "https://$funcAname.azurewebsites.net/runtime/webhooks/eventgrid?functionName=ConsunmeEventGridEvent&code=$sysKey"
-az eventgrid event-subscription create --name "funcAppAegSub" --source-resource-id "/subscriptions/$azsubscription.id/resourceGroups/$RG/providers/Microsoft.EventGrid/topics/$topicName" --endpoint $funcEndpoint
+$SubId = $azsubscription.Id
+$checkExistingSub = az eventgrid event-subscription show --name $egsubname --source-resource-id /subscriptions/$SubId/resourceGroups/$RG/providers/Microsoft.EventGrid/topics/$topicName | ConvertFrom-Json
+if ( $checkExistingSub.name -eq $egsubname ) {
+    Write-Host "creating EG subscription for function app A exists" -ForegroundColor Yellow
+
+} else {
+    Write-Host "creating EG subscription for function app A"
+
+
+
+    $EgfuncName= "ConsunmeEventGridEvent"
+    # get sys key
+    $resourceId  = "/subscriptions/$SubId/resourceGroups/$RG/providers/Microsoft.Web/sites/$funcAname"
+    $keys=az rest --method post --uri "$resourceId/host/default/listKeys?api-version=2018-11-01" | ConvertFrom-Json
+    $sysKey=$keys.systemKeys[0].eventgrid_extension
+    $funcEndpoint = "https://$funcAname.azurewebsites.net/runtime/webhooks/eventgrid?functionName=$EgfuncName^^^&code=$sysKey"
+    az eventgrid event-subscription create --name $egsubname --source-resource-id "/subscriptions/$SubId/resourceGroups/$RG/providers/Microsoft.EventGrid/topics/$topicName" --endpoint $funcEndpoint
+
+}
+
+## for testing using VS Code .http the following are required to post an event
+##    az eventgrid topic key list --name $topicName -g $RG --query "key1" --output tsv 
+##    az eventgrid topic show --name $topicName -g $RG --query "endpoint" --output tsv

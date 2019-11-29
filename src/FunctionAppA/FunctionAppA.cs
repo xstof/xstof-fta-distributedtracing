@@ -178,6 +178,7 @@ namespace FTA.AICorrelation
         public void EventGridTest([EventGridTrigger]EventGridEvent eventGridEvent, ILogger log)
         {
             log.LogInformation(eventGridEvent.Data.ToString());
+
             DumpActivity(Activity.Current, log);
         }
         
