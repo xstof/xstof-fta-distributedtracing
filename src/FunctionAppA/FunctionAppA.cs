@@ -20,6 +20,8 @@ namespace FTA.AICorrelation
 
         private readonly HttpClient _httpClient;
         private readonly string _logicAppAUrl;
+
+        private readonly string _functionAppBUrl;
         private readonly string _httpBinHost;
         private readonly string _httpBinUrl;
 
@@ -27,10 +29,13 @@ namespace FTA.AICorrelation
             // fetch url for external http req inspection service
             this._httpClient = clientFactory.CreateClient();
             this._httpBinHost = Environment.GetEnvironmentVariable("httpBinIp", EnvironmentVariableTarget.Process);
-            this._httpBinUrl = "http://requestbin.net/r/10opbi51";
+            this._httpBinUrl = "http://requestbin.net/r/1nvwpun1";
 
             // fetch url for logic app A
             this._logicAppAUrl = Environment.GetEnvironmentVariable("logicAppAUrl", EnvironmentVariableTarget.Process);
+
+            //fetch url for function app B
+            this._functionAppBUrl = Environment.GetEnvironmentVariable("functionAppBUrl", EnvironmentVariableTarget.Process);
         }
 
         [FunctionName("InitiateFlowToQueue")]
@@ -122,7 +127,8 @@ namespace FTA.AICorrelation
             DumpActivity(Activity.Current, log);
             
             // send to the second function app, assuming this runs locally on port 7072
-            await _httpClient.GetAsync("http://localhost:7072/api/http");
+            // TODO: fix this, move this into app settings, populated by ARM template
+            await _httpClient.GetAsync($"{this._functionAppBUrl}/api/http");
 
             return (ActionResult)new OkObjectResult($"");
         }

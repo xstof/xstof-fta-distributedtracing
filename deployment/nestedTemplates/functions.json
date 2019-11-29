@@ -72,6 +72,10 @@
       "logicAppAUrl": {
         "type": "string",
         "defaultValue": ""
+      },
+      "functionAppBUrl": {
+        "type": "string",
+        "defaultValue": ""
       }
     },
     "variables": {
@@ -169,6 +173,10 @@
               {
                 "name": "logicAppAUrl",
                 "value": "[parameters('logicAppAUrl')]"
+              },
+              {
+                "name": "functionAppBUrl",
+                "value": "[parameters('functionAppBUrl')]"
               }
             ],
             "connectionStrings": [

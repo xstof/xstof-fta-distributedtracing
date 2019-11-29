@@ -194,6 +194,9 @@
                     },
                     "logicAppAUrl": {
                         "value": "[reference('nested-logicapp-a').outputs.logicAppAUrl.value]"
+                    },
+                    "functionAppBUrl": {
+                        "value": "[concat('https://',  variables('functionAppName-A'), '.azurewebsites.net')]"
                     }
                 }
             },

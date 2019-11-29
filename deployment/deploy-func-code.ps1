@@ -13,9 +13,9 @@ Param(
 ## build, publish, zip and deploy functions via the cli - function name hard coded here and in the function nested ARM deploy template
 dotnet publish "..\src\functionAppA\FunctionAppA.csproj"
 $compress = @{
-Path= "..\src\FunctionAppA\bin\Debug\netcoreapp2.2\publish\*"
-CompressionLevel = "Fastest"
-DestinationPath = "FunctionAppA.zip"
+  Path= "..\src\FunctionAppA\bin\Debug\netcoreapp2.2\publish\*"
+  CompressionLevel = "Fastest"
+  DestinationPath = "FunctionAppA.zip"
 }
 Compress-Archive @compress -Force
 $funcAname = "$ResourcesPrefix" + "-fn-a"
@@ -25,9 +25,9 @@ write-host "published function app A" -ForegroundColor Green
 
 dotnet publish "..\src\functionAppB\FunctionAppB.csproj"
 $compress = @{
-Path= "..\src\FunctionAppB\bin\Debug\netcoreapp2.2\publish\*"
-CompressionLevel = "Fastest"
-DestinationPath = "FunctionAppB.zip"
+  Path= "..\src\FunctionAppB\bin\Debug\netcoreapp2.2\publish\*"
+  CompressionLevel = "Fastest"
+  DestinationPath = "FunctionAppB.zip"
 }
 Compress-Archive @compress -Force
 $funcBname = $ResourcesPrefix + "-fn-b"

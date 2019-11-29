@@ -23,19 +23,43 @@
                     "actions": {
                         "HTTP": {
                             "inputs": {
+                                "headers": {
+                                    "Correlation-Context": "@trigger()['outputs']['headers']['Correlation-Context']",
+                                    "Request-Id": "@{concat(split(trigger()['outputs']['headers']['Request-Id'], '.')[0], '.', substring(string(guid()),0,8) ,'.')}"
+                                },
                                 "method": "GET",
                                 "uri": "@triggerBody()?['url']"
+                            },
+                            "runAfter": {
+                                "Initialize_variable": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "trackedProperties": {
+                                "Correlation-Context": "@trigger()['outputs']['headers']['Correlation-Context']",
+                                "CustomActionExecutionId": "@{action()['inputs']['headers']['Request-Id']}"
+                            },
+                            "type": "Http"
+                        },
+                        "Initialize_variable": {
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "customActionExecutionId",
+                                        "type": "string",
+                                        "value": "@concat(split(trigger()['outputs']['headers']['Request-Id'], '.')[0], '.', substring(string(guid()),0,8) ,'.')"
+                                    }
+                                ]
                             },
                             "runAfter": {
                             },
                             "trackedProperties": {
                                 "Correlation-Context": "@trigger()['outputs']['headers']['Correlation-Context']",
-                                "Request-Context": "@trigger()['outputs']['headers']['Request-Context']",
                                 "Request-Id": "@trigger()['outputs']['headers']['Request-Id']",
                                 "customCorrelationId": "@trigger()['outputs']['headers']['Request-Id']",
                                 "traceparent": "@trigger()['outputs']['headers']['traceparent']"
                             },
-                            "type": "Http"
+                            "type": "InitializeVariable"
                         }
                     },
                     "contentVersion": "1.0.0.0",

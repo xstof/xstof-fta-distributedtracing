@@ -22,7 +22,7 @@ namespace FTA.AICorrelation
         public FunctionAppB(IHttpClientFactory clientFactory){
             this._httpClient = clientFactory.CreateClient();
             this._httpBinHost = Environment.GetEnvironmentVariable("httpBinIp", EnvironmentVariableTarget.Process);
-            this._httpBinUrl = "http://requestbin.net/r/10opbi51";
+            this._httpBinUrl = "http://requestbin.net/r/1nvwpun1";
         }
 
         [FunctionName("ReceiveFromSvcBus")]
