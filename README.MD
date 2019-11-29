@@ -1,4 +1,14 @@
-# App Insights Correlation Playground
+# Cross Component Correlation Playground
+
+The Cross Component Correlation Playground is a setup which allows for testing a variety of distributed tracing scenarios across a number of components in Azure, amongst which:
+- Functions
+- Logic Apps
+- Azure Service Bus
+- Event Grid
+
+It does so by providing real working examples and associated instructions for a number of distributed tracing scenarios.
+
+![scenarios](./images/CrossContextCorrScenarios.png)
 
 ## How does correlation work?
 
