@@ -1,37 +1,56 @@
-@hostname = begim-fn-a.azurewebsites.net
+@hostnamea = aicorr3-fn-a.azurewebsites.net
+@hostnameb = aicorr3-fn-b.azurewebsites.net
 ## if needed declare host and port e.g. localhost:8080
-@host = {{hostname}}
+@hosta = {{hostnamea}}
+@hostb = {{hostnameb}}
 @contentType = application/json
 @protocol = https
 @submissionid = {{$guid}}
 
 
-POST {{protocol}}://{{host}}/api/queue/{{submissionid}} HTTP/1.1
+POST {{protocol}}://{{hosta}}/api/queue/{{submissionid}} HTTP/1.1
 Request-Context: appId=cid-v1:188acaa8-2fff-43f9-bc0c-bde9d84793af
 
 ### USING FUNCTION A PUT A MSG ON A QUEUE TO BE PICKED UP BY FUNCTION B
 @submissionid = {{$guid}}
-POST {{protocol}}://{{host}}/api/queue-with-bagage/{{submissionid}} HTTP/1.1
+POST {{protocol}}://{{hosta}}/api/queue-with-bagage/{{submissionid}} HTTP/1.1
 
 
 ### USING FUNCTION A CALL AN EXTERNAL HTTP ENDPOINT
-GET {{protocol}}://{{host}}/api/callexternalhttpurl HTTP/1.1
+GET {{protocol}}://{{hosta}}/api/callexternalhttpurl HTTP/1.1
 
 
 
 ### USING FUNCTION A CALL FUNCTION B OVER HTTP, GET A RESPONSE BACK
-GET {{protocol}}://{{host}}/api/callhttpwithrespfromb
+GET {{protocol}}://{{hosta}}/api/callhttpwithrespfromb
 
 
 ### USING FUNCTION A CALL LOGIC APP A
-GET {{protocol}}://{{host}}/api/calllogicappa
+GET {{protocol}}://{{hosta}}/api/calllogicappa
+
 
 ### USING FUNCTION A CALL LOGIC APP A WiTH BAGGAGE
+# GET http://{{hosta}}/api/calllogicappa/{{submissionid}}
 
-GET {{protocol}}://{{host}}/api/calllogicappa/{{submissionid}}
 
-### get the app id for an AI resource by ikey
-@ikey = 361e1546-f0ca-4d30-9890-eee967e73212
+### USING FUNCTION A CALL LOGIC APP A WiTH BAGGAGE AND CONTENT; LOGIC APP TO CALL INTO A URL
 
-GET https://dc.services.visualstudio.com/api/profiles/{{ikey}}/appId HTTP/1.1
+GET http://{{hosta}}/api/calllogicappa/{{submissionid}}
+content-type: application/json
 
+{
+    "logicAppAction": "callIntoUrl",
+    "url": "http://requestbin.net/r/10opbi51"
+}
+
+### USING FUNCTION A CALL LOGIC APP A WiTH BAGGAGE AND CONTENT; LOGIC APP TO CALL INTO A FUNCTION
+
+GET http://{{hosta}}/api/calllogicappa/{{submissionid}}
+content-type: application/json
+
+{
+    "logicAppAction": "callIntoUrl",
+    "url": "http://{{hostb}}/api/http"
+}
+
+GET {{protocol}}://{{hosta}}/api/calllogicappa/{{submissionid}}

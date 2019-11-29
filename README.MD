@@ -93,12 +93,14 @@ Note: this records the custom property on the `request` telemetry item not on an
 
 The interesting properties that appear as headers on the outbound HTTP call are:
 
-| Header                   | Value                                                       | Comment                              |
-| ------------             | -----------------------------------                         | ------------------------------------ |
-| **TraceParent**          | **00-2ba1dcbb920c0c489823e86ee57e557d-82c588a5d78c3f4a-00** | is the new W3C trace context         |
-| **Request-Id**           | **\|2ba1dcbb920c0c489823e86ee57e557d.82c588a5d78c3f4a.**    | is the older "request-id" mechanism  |
-| **Request-Context**      | **appId=cid-v1:6b06625e-3d1f-4bb4-8b50-b22b20b5a6d6**       | represents the app id for AI A       |
-| X-Request-Id             | c39043fc-5693-4ca6-ba3c-56cf059acbad                        | (not important to the discussion)    | 
+| Header                   | Value                                                       | Comment                                          |
+| ------------             | -----------------------------------                         | ------------------------------------             |
+| **TraceParent**          | **00-2ba1dcbb920c0c489823e86ee57e557d-82c588a5d78c3f4a-00** | is the new W3C trace context                     |
+| **Request-Id**           | **\|2ba1dcbb920c0c489823e86ee57e557d.82c588a5d78c3f4a.**    | is the older "request-id" mechanism              |
+| **Request-Context**      | **appId=cid-v1:6b06625e-3d1f-4bb4-8b50-b22b20b5a6d6**       | represents the app id for AI A                   |
+| X-Request-Id             | c39043fc-5693-4ca6-ba3c-56cf059acbad                        | NOT important to the discussion - IGNORE THIS    | 
+
+> Note: `X-Request-Id` is an older concept, originally intended to flow custom correlation id between client and server for HTTP calls.  It is not important to the discussion here.  Please ignore.
 
 > Our application id for App Insights A == 6b06625e-3d1f-4bb4-8b50-b22b20b5a6d6)
 > 

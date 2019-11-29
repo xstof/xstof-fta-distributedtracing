@@ -20,38 +20,47 @@
             "properties": {
                 "definition": {
                     "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+                    "actions": {
+                        "HTTP": {
+                            "inputs": {
+                                "method": "GET",
+                                "uri": "@triggerBody()?['url']"
+                            },
+                            "runAfter": {
+                            },
+                            "trackedProperties": {
+                                "Correlation-Context": "@trigger()['outputs']['headers']['Correlation-Context']",
+                                "Request-Context": "@trigger()['outputs']['headers']['Request-Context']",
+                                "Request-Id": "@trigger()['outputs']['headers']['Request-Id']",
+                                "customCorrelationId": "@trigger()['outputs']['headers']['Request-Id']",
+                                "traceparent": "@trigger()['outputs']['headers']['traceparent']"
+                            },
+                            "type": "Http"
+                        }
+                    },
                     "contentVersion": "1.0.0.0",
+                    "outputs": {
+                    },
                     "parameters": {
                     },
                     "triggers": {
                         "manual": {
                             "inputs": {
                                 "schema": {
+                                    "properties": {
+                                        "logicAppAction": {
+                                            "type": "string"
+                                        },
+                                        "url": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
                                 }
                             },
                             "kind": "Http",
                             "type": "Request"
                         }
-                    },
-                    "actions": {
-                        "HTTP": {
-                            "inputs": {
-                                "method": "GET",
-                                "uri": "http://requestbin.net/r/1gkuibz1"
-                            },
-                            "runAfter": {
-                            },
-                            "type": "Http",
-                            "trackedProperties": {
-                                "Request-Context": "@trigger()['outputs']['headers']['Request-Context']",
-                                "Correlation-Context": "@trigger()['outputs']['headers']['Correlation-Context']",
-                                "Request-Id": "@trigger()['outputs']['headers']['Request-Id']",
-                                "customCorrelationId": "@trigger()['outputs']['headers']['Request-Id']",
-                                "traceparent": "@trigger()['outputs']['headers']['traceparent']"
-                            }
-                        }
-                    },
-                    "outputs": {
                     }
                 },
                 "parameters": {
