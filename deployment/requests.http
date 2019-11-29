@@ -50,7 +50,16 @@ content-type: application/json
     "url": "https://{{hostb}}/api/http"
 }
 
-GET {{protocol}}://{{hosta}}/api/calllogicappa/{{submissionid}}
+### USING FUNCTION A CALL LOGIC APP A WITH BAGGAGE AND CONTENT; LOGIC APP TO PUT MSG ON SERVICE BUS; 
+### FUNCTION B TO PICK THAT UP
+
+GET http://{{hosta}}/api/calllogicappa/{{submissionid}}
+content-type: application/json
+
+{
+    "logicAppAction": "callIntoServiceBus",
+    "url": ""
+}
 
 ### test event grid function for functionappA
 @rg = xstof

@@ -83,8 +83,10 @@ However, there IS a correlation to be found in the properties.  Notice how the r
 
 Azure Functions records metadata on the service bus message, most in particular:
 - `$AzureWebJobsParentId` is set to the `InvocationId` of the dependency entry (which in turn is also the same as the request entry - as the InvocationId indicates the unique invocation identifier of the function)
-- `DiagnosticId` is set to the `Dependency Id` of the dependency entry of the function which submitted the message
+- `Diagnostic-Id` is set to the `Dependency Id` of the dependency entry of the function which submitted the message
 - Function B takes this `DiagnosticId` metadata and uses that as it's `Parent Id`
+
+![svcbus-metadata](./images/svcbus-metadata.png)
 
 ### Recording custom telemetry on a function invocation's telemetry
 
