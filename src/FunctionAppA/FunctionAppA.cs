@@ -4,6 +4,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Azure.WebJobs.Extensions.EventGrid;
+using Microsoft.Azure.EventGrid.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -167,6 +169,13 @@ namespace FTA.AICorrelation
             await _httpClient.PostAsync(_logicAppAUrl, null);
 
             return (ActionResult)new OkObjectResult($"");
+        }
+
+        [FunctionName("ConsunmeEventGridEvent")]
+        public void EventGridTest([EventGridTrigger]EventGridEvent eventGridEvent, ILogger log)
+        {
+            log.LogInformation(eventGridEvent.Data.ToString());
+            DumpActivity(Activity.Current, log);
         }
         
         private void DumpActivity(Activity act, ILogger log)

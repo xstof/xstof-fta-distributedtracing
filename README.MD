@@ -100,7 +100,11 @@ The interesting properties that appear as headers on the outbound HTTP call are:
 | **Request-Context**      | **appId=cid-v1:6b06625e-3d1f-4bb4-8b50-b22b20b5a6d6**       | represents the app id for AI A       |
 | X-Request-Id             | c39043fc-5693-4ca6-ba3c-56cf059acbad                        | (not important to the discussion)    | 
 
-(Note that our application id for App Insights A == 6b06625e-3d1f-4bb4-8b50-b22b20b5a6d6)
+> Our application id for App Insights A == 6b06625e-3d1f-4bb4-8b50-b22b20b5a6d6)
+> 
+> Application Id is also returned in the response header request-context to a http function invocation
+> Because this value is obtained (non blocking) by the runtime the first few calls may not return it.
+> Ref https://github.com/microsoft/ApplicationInsights-dotnet-server/issues/504
 
 ... and what we see on App Insights:
 
