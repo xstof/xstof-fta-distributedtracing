@@ -1,2 +1,50 @@
-GET  http://localhost:5000/egwebhook
 
+
+
+# cloud event
+
+POST http://localhost:5000/api/egwebhook
+Content-Type: application/cloudevents+json
+aeg-data-version: 1
+aeg-delivery-count: 0
+aeg-event-type: Notification
+aeg-metadata-version: 0
+aeg-subscription-name: FUNCAPPAEGSUB
+
+{
+    "specversion" : "1.0",
+    "type" : "com.example.someevent",
+    "source" : "/mycontext",
+    "id" : "A234-1234-1234",
+    "time" : "2018-04-05T17:31:00Z",
+    "comexampleextension1" : "value",
+    "comexampleothervalue" : 5,
+    "datacontenttype" : "application/json",
+    "data" : { "message": "hello world"}
+}
+
+
+
+# validation handshake, eventgrid event
+
+POST http://localhost:5000/api/egwebhook
+aeg-data-version: 1
+aeg-delivery-count: 0
+aeg-event-type: SubscriptionValidation
+aeg-metadata-version: 0
+aeg-subscription-name: FUNCAPPAEGSUB
+content-type: application/json; charset=utf-8
+
+[{
+  "id": "47851ec1-134a-4d12-9a93-343957d18356",
+  "topic": "/subscriptions/09a55fcd-23ab-4b16-98b7-c17f85e641d5/resourceGroups/xstof/providers/microsoft.eventgrid/topics/begim-egtopic",
+  "subject": "",
+  "data": {
+    "validationCode": "30C56E22-B13D-4126-808B-048D8894F961",
+    "validationUrl": "http://localhost:5000/api/egwebhook"
+  },
+  "eventType": "Microsoft.EventGrid.SubscriptionValidationEvent",
+  "eventTime": "2019-11-30T20:02:35.1948416Z",
+  "metadataVersion": "1",
+  "dataVersion": "2"
+}]

@@ -6,11 +6,21 @@ namespace eg_webhook_api{
 
     public class GridEvent<T> where T: class
     {
+        [JsonPropertyName("id")]
         public string Id { get; set;}
+
+        [JsonPropertyName("eventType")]
         public string EventType { get; set;}
+
+        [JsonPropertyName("subject")]
         public string Subject {get; set;}
+
+        [JsonPropertyName("eventTime")]
         public DateTime EventTime { get; set; } 
+
+        [JsonPropertyName("data")]
         public T Data { get; set; } 
+        [JsonPropertyName("topic")]
         public string Topic { get; set; }
     }
 

@@ -12,7 +12,7 @@ using eg_webhook_api;
 namespace eg_webhook_api.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class EgWebHookController : ControllerBase
     {
         private readonly ILogger<EgWebHookController> _logger;
@@ -69,7 +69,7 @@ namespace eg_webhook_api.Controllers
                 {
                     return await HandleValidation(jsonContent);
                 }
-                else if (IsCloudEvent(jsonContent, out CloudEvent<string> cloudEvent))
+                else if (IsCloudEvent(jsonContent, out CloudEvent<dynamic> cloudEvent))
                 {
                     return await HandleCloudEvent(cloudEvent);
                 }
@@ -92,7 +92,7 @@ namespace eg_webhook_api.Controllers
             });
         }
 
-        private async Task<IActionResult> HandleCloudEvent(CloudEvent<string> details)
+        private async Task<IActionResult> HandleCloudEvent(CloudEvent<dynamic> details)
         {
             if (null == details){
 
@@ -112,14 +112,14 @@ namespace eg_webhook_api.Controllers
             return Ok();
         }
 
-        private static bool IsCloudEvent(string jsonContent, out CloudEvent<string> cloudEvent)
+        private static bool IsCloudEvent(string jsonContent, out CloudEvent<dynamic> cloudEvent)
         {
             cloudEvent=null;
 
             try
             {
                 // Attempt to read one JSON object. 
-                var details = JsonSerializer.Deserialize<CloudEvent<string>>(jsonContent);
+                var details = JsonSerializer.Deserialize<CloudEvent<dynamic>>(jsonContent);
 
                 // Check for the spec version property.
                 var version = details.SpecVersion;

@@ -56,10 +56,11 @@ if ( $checkExistingSub.name -eq $egsubname ) {
     $EgfuncName= "ConsunmeEventGridEvent"
     # get sys key
     $resourceId  = "/subscriptions/$SubId/resourceGroups/$RG/providers/Microsoft.Web/sites/$funcAname"
-    $keys=az rest --method post --uri "$resourceId/host/default/listKeys?api-version=2018-11-01" | ConvertFrom-Json
-    $sysKey=$keys.systemKeys[0].eventgrid_extension
-    $funcEndpoint = "https://$funcAname.azurewebsites.net/runtime/webhooks/eventgrid?functionName=$EgfuncName^^^&code=$sysKey"
-    az eventgrid event-subscription create --name $egsubname --source-resource-id "/subscriptions/$SubId/resourceGroups/$RG/providers/Microsoft.EventGrid/topics/$topicName" --endpoint $funcEndpoint
+    #$keys=az rest --method post --uri "$resourceId/host/default/listKeys?api-version=2018-11-01" | ConvertFrom-Json
+    #$sysKey=$keys.systemKeys[0].eventgrid_extension
+    #$funcEndpoint = "https://$funcAname.azurewebsites.net/runtime/webhooks/eventgrid?functionName=$EgfuncName^^^&code=$sysKey"
+    $endpoint='https://entv8wvava2k.x.pipedream.net/'
+    az eventgrid event-subscription create --name $egsubname --source-resource-id "/subscriptions/$SubId/resourceGroups/$RG/providers/Microsoft.EventGrid/topics/$topicName" --endpoint $endpoint
 
 }
 
