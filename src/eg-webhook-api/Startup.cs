@@ -11,49 +11,45 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace eg_webhook_api
-{
-    public class Startup
-    {
-        public Startup(IConfiguration configuration)
-        {
+namespace eg_webhook_api {
+    public class Startup {
+        public Startup (IConfiguration configuration) {
             Configuration = configuration;
         }
 
         public IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
-        public void ConfigureServices(IServiceCollection services)
-        {
-            services.AddControllers();
-            services.AddApplicationInsightsTelemetry();
+        public void ConfigureServices (IServiceCollection services) {
+            services.AddControllers ();
+            services.AddApplicationInsightsTelemetry ();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
-        {
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
+        public void Configure (IApplicationBuilder app, IWebHostEnvironment env) {
+            if (env.IsDevelopment ()) {
+                app.UseDeveloperExceptionPage ();
             }
 
-            app.UseHttpsRedirection();
+            //app.UseHttpsRedirection();
 
-            app.UseRouting();
+            app.UseRouting ();
 
-            app.UseAuthorization();
+            app.UseAuthorization ();
 
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllers();
+            app.UseEndpoints (endpoints => {
+                endpoints.MapControllers ();
             });
 
-            app.Run(async context =>
-            {
-                foreach( var header in context.Request.Headers){
-                   Console.WriteLine( $"Header {header.Key} : {header.Value}" );
+            app.Use (async (context, next) => {
+                foreach (var header in context.Request.Headers) {
+                    Console.WriteLine ($"Header {header.Key} : {header.Value}");
                 }
+
+                // Call the next delegate/middleware in the pipeline
+                await next ();
             });
+
         }
     }
 }

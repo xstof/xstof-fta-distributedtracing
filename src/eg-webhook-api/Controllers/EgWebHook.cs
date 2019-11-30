@@ -49,9 +49,9 @@ namespace eg_webhook_api.Controllers
 
         // send an event grid message?
         [HttpGet]
-        public void Get()
+        public IActionResult Get()
         {
-            Console.WriteLine ("Hello world");
+            return Ok("hello world");
         }
 
         [HttpPost]
