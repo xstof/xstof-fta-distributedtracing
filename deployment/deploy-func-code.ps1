@@ -22,7 +22,7 @@ Compress-Archive @compress -Force
 $funcAname = "$ResourcesPrefix" + "-fn-a"
 az functionapp deployment source config-zip  -g $RG -n $funcAname --src "FunctionAppA.zip"
 
-write-host "published function app A" -ForegroundColor Green
+write-host "published function app A source" -ForegroundColor Green
 
 ## function App B
 
@@ -36,7 +36,23 @@ Compress-Archive @compress -Force
 $funcBname = $ResourcesPrefix + "-fn-b"
 az functionapp deployment source config-zip  -g $RG -n $funcBname --src "FunctionAppB.zip"
 
-write-host "published function app B" -ForegroundColor Green
+write-host "published function app B source" -ForegroundColor Green
+
+# Web App
+$webappname="begim-egsubscriber-webapp"
+dotnet publish "..\src\eg-webhook-api\eg-webhook-api.csproj"
+$compress = @{
+  Path= "..\src\eg-webhook-api\bin\Debug\netcoreapp3.0\publish\*"
+  CompressionLevel = "Fastest"
+  DestinationPath = "eg-webhook-api.zip"
+}
+Compress-Archive @compress -Force
+$funcBname = $ResourcesPrefix + "-fn-b"
+az webapp deployment source config-zip  -g $RG -n $webappname --src "eg-webhook-api.zip"
+
+write-host "published web app source" -ForegroundColor Green
+
+# Event Grid
 
 ## create a subscription for the demo event grid and functionA => ConsunmeEventGridEvent function
 ##get a key

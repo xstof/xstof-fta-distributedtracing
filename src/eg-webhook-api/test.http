@@ -1,5 +1,5 @@
 
-
+GET https://begim-egsubscriber-webapp.azurewebsites.net/api/egwebhook
 
 # cloud event
 
