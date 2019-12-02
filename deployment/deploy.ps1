@@ -3,8 +3,7 @@ Param(
   [Parameter(Mandatory=$True)]
   [string]$RG,
 
-  
-  [Paremeter(Madatory=$True)]
+  [Parameter(Mandatory=$False)]
   [string]$Location="westeurope",
 
   [Parameter(Mandatory=$False)]
