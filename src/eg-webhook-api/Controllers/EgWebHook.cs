@@ -51,6 +51,7 @@ namespace eg_webhook_api.Controllers
         [HttpGet]
         public IActionResult Get()
         {
+            _logger.LogInformation("GET called");
             return Ok("hello world");
         }
 

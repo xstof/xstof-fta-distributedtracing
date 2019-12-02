@@ -25,6 +25,7 @@
         "eventGridTopicName": "[concat(parameters('resourcesPrefix'), '-', 'egtopic')]",
         "eventGridSubscriberWapName": "[concat(parameters('resourcesPrefix'), '-', 'egsubscriber-wap')]",
         "eventGridSubscriberAppName": "[concat(parameters('resourcesPrefix'), '-', 'egsubscriber-webapp')]",
+        "eventGridSubscriberWap-ai-Name": "[concat(parameters('resourcesPrefix'), '-', 'egsubscriber-webapp-ai')]",
         "serviceBusNSName": "[concat(parameters('resourcesPrefix'), '-', 'svcbusns')]",
         "serviceBusQueueName": "[concat(parameters('resourcesPrefix'), '-', 'svcbusqueue')]",
         "functionAppName-A": "[concat(parameters('resourcesPrefix'), '-', 'fn-a')]",
@@ -36,6 +37,17 @@
         "logAnalyticsWorkbookDisplayName": "[concat(parameters('resourcesPrefix'), '-', 'CrossComponentCorrelation')]"
     },
     "resources": [
+        {
+            "type": "microsoft.insights/components",
+            "apiVersion": "2015-05-01",
+            "name": "[variables('eventGridSubscriberWap-ai-Name')]",
+            "location": "[resourceGroup().location]",
+            "kind": "web",
+            "properties": {
+                "Application_Type": "web",
+                "Request_Source": "AppServiceEnablementCreate"
+            }
+        },
         {
         "apiVersion": "2018-02-01",
         "type": "Microsoft.Web/serverfarms",
@@ -55,17 +67,20 @@
         "name": "[variables('eventGridSubscriberAppName')]",
         "location": "[resourceGroup().location]",
         "properties": {
-            "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('eventGridSubscriberWapName'))]"
+            "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('eventGridSubscriberWapName'))]",
+            "siteConfig": {
+            "appSettings": [ 
+                {
+                    "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+                    "value": "[reference(resourceId('microsoft.insights/components/', variables('eventGridSubscriberWap-ai-Name')), '2015-05-01').InstrumentationKey]"
+                }
+            ]
+        }
         },
         "dependsOn": [
-            "[resourceId('Microsoft.Web/serverfarms', variables('eventGridSubscriberWapName'))]"
+            "[resourceId('Microsoft.Web/serverfarms', variables('eventGridSubscriberWapName'))]",
+            "[resourceId('microsoft.insights/components', variables('eventGridSubscriberWap-ai-Name'))]"
         ]
-        },
-        {
-            "name": "[variables('eventGridTopicName')]",
-            "type": "Microsoft.EventGrid/topics",
-             "location": "[resourceGroup().location]",
-            "apiVersion": "2018-01-01"
         },
         {
             "name": "nested-httpbin-aci-container",
