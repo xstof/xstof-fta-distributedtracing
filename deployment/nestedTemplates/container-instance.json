@@ -76,7 +76,7 @@
                   "port": "[parameters('port')]"
                 },
                 {
-                  "port": 8080
+                  "port": 8002
                 }
               ],
               "resources": {
@@ -85,21 +85,6 @@
                   "memoryInGb": "[parameters('memoryInGb')]"
                 }
               },
-              "command": [
-                "mitmweb",
-                "--web-iface",
-                "0.0.0.0",
-                "--listen-port",
-                "8888",
-                "--web-port",
-                "8080",
-                "-s",
-                "static-response.py",
-                 "--mode",
-                "transparent",
-                "--set",
-                "block_global=false"
-              ] ,
               "environmentVariables": [
               ]
             }
@@ -116,7 +101,7 @@
             },
             {
               "protocol": "Tcp",
-              "port": 8080
+              "port": 8002
             }
           ],
           "dnsNameLabel": "[concat('ip', parameters('name'))]"
