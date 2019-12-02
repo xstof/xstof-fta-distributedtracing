@@ -3,6 +3,9 @@ Param(
   [Parameter(Mandatory=$True)]
   [string]$RG,
 
+  [Parameter(Mandatory=$True)]
+  [string]$Location="westeurope",
+
   [Parameter(Mandatory=$False)]
   [string]$ResourcesPrefix="aicorr2"
 )
@@ -56,27 +59,35 @@ write-host "published web app source" -ForegroundColor Green
 
 ## create a subscription for the demo event grid and functionA => ConsunmeEventGridEvent function
 ##get a key
-$topicName = $ResourcesPrefix + "-egtopic"
-$egsubname = "funcAppAegSub"
+$topicName = $ResourcesPrefix + "-egtopic-cs"
+$egsubname = "eg-cs-sub"
 $azsubscription= az account show | ConvertFrom-Json
 $SubId = $azsubscription.Id
+
+# create topic (see note below)
+
+$topicDetails = az eventgrid topic show --name $topicName --resource-group $RG --subscription $SubId | ConvertTo-Json
+
+if (! $topicDetails){
+  write-host "no topic found"
+  az eventgrid topic create -n $topicName -l $Location -g $RG --input-schema cloudeventschemav1_0
+}
+
 $checkExistingSub = az eventgrid event-subscription show --name $egsubname --source-resource-id /subscriptions/$SubId/resourceGroups/$RG/providers/Microsoft.EventGrid/topics/$topicName | ConvertFrom-Json
 if ( $checkExistingSub.name -eq $egsubname ) {
-    Write-Host "creating EG subscription for function app A exists" -ForegroundColor Yellow
+    Write-Host "creating EG subscription " -ForegroundColor Yellow
 
 } else {
-    Write-Host "creating EG subscription for function app A"
+    Write-Host "creating EG subscription "
+    # if exchanging web app for a func endpoint dont forget to escape "&" (query string) with "^^^&"
+    $endpoint="https://$webappname.azurewebsites.net/api/egwebhook"
 
+# IMPORTANT NOTE: Using Cloud Schema requires an AZ extension (for BOTH topic AND subscription)
+# https://docs.microsoft.com/en-us/azure/event-grid/cloudevents-schema
+# handshake is also different , uses OPTIONS verb as decribed here: https://github.com/cloudevents/spec/blob/v1.0/http-webhook.md#4-abuse-protection
 
-
-    $EgfuncName= "ConsunmeEventGridEvent"
-    # get sys key
-    $resourceId  = "/subscriptions/$SubId/resourceGroups/$RG/providers/Microsoft.Web/sites/$funcAname"
-    #$keys=az rest --method post --uri "$resourceId/host/default/listKeys?api-version=2018-11-01" | ConvertFrom-Json
-    #$sysKey=$keys.systemKeys[0].eventgrid_extension
-    #$funcEndpoint = "https://$funcAname.azurewebsites.net/runtime/webhooks/eventgrid?functionName=$EgfuncName^^^&code=$sysKey"
-    $endpoint='https://entv8wvava2k.x.pipedream.net/'
-    az eventgrid event-subscription create --name $egsubname --source-resource-id "/subscriptions/$SubId/resourceGroups/$RG/providers/Microsoft.EventGrid/topics/$topicName" --endpoint $endpoint
+      #setup for a web app custom webhook endpoint (cloud event schema requires custom endpoint)
+    az eventgrid event-subscription create --name $egsubname --source-resource-id "/subscriptions/$SubId/resourceGroups/$RG/providers/Microsoft.EventGrid/topics/$topicName" --endpoint $endpoint  --event-delivery-schema cloudeventschemav1_0
 
 }
 
