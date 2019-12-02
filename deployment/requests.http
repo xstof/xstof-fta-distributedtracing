@@ -7,6 +7,8 @@
 @protocol = https
 @submissionid = {{$guid}}
 
+http://localhost:5000
+
 
 ### USING FUNCTION A PUT A MSG ON A QUEUE TO BE PICKED UP BY FUNCTION B
 @submissionid = {{$guid}}

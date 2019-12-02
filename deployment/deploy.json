@@ -23,6 +23,8 @@
         "aciImage": "xstof/mitmproxy",
         "aciImagePort": "8888",
         "eventGridTopicName": "[concat(parameters('resourcesPrefix'), '-', 'egtopic')]",
+        "eventGridSubscriberWapName": "[concat(parameters('resourcesPrefix'), '-', 'egsubscriber-wap')]",
+        "eventGridSubscriberAppName": "[concat(parameters('resourcesPrefix'), '-', 'egsubscriber-webapp')]",
         "serviceBusNSName": "[concat(parameters('resourcesPrefix'), '-', 'svcbusns')]",
         "serviceBusQueueName": "[concat(parameters('resourcesPrefix'), '-', 'svcbusqueue')]",
         "functionAppName-A": "[concat(parameters('resourcesPrefix'), '-', 'fn-a')]",
@@ -34,6 +36,31 @@
         "logAnalyticsWorkbookDisplayName": "[concat(parameters('resourcesPrefix'), '-', 'CrossComponentCorrelation')]"
     },
     "resources": [
+        {
+        "apiVersion": "2018-02-01",
+        "type": "Microsoft.Web/serverfarms",
+        "kind": "app",
+        "name": "[variables('eventGridSubscriberWapName')]",
+        "location": "[resourceGroup().location]",
+        "properties": {},
+        "dependsOn": [],
+        "sku": {
+            "name": "S1"
+        }
+        },
+        {
+        "apiVersion": "2018-11-01",
+        "type": "Microsoft.Web/sites",
+        "kind": "app",
+        "name": "[variables('eventGridSubscriberAppName')]",
+        "location": "[resourceGroup().location]",
+        "properties": {
+            "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('eventGridSubscriberWapName'))]"
+        },
+        "dependsOn": [
+            "[resourceId('Microsoft.Web/serverfarms', variables('eventGridSubscriberWapName'))]"
+        ]
+        },
         {
             "name": "[variables('eventGridTopicName')]",
             "type": "Microsoft.EventGrid/topics",

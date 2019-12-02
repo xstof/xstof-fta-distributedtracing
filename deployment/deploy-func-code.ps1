@@ -22,7 +22,7 @@ Compress-Archive @compress -Force
 $funcAname = "$ResourcesPrefix" + "-fn-a"
 az functionapp deployment source config-zip  -g $RG -n $funcAname --src "FunctionAppA.zip"
 
-write-host "published function app A" -ForegroundColor Green
+write-host "published function app A source" -ForegroundColor Green
 
 ## function App B
 
@@ -36,7 +36,23 @@ Compress-Archive @compress -Force
 $funcBname = $ResourcesPrefix + "-fn-b"
 az functionapp deployment source config-zip  -g $RG -n $funcBname --src "FunctionAppB.zip"
 
-write-host "published function app B" -ForegroundColor Green
+write-host "published function app B source" -ForegroundColor Green
+
+# Web App
+$webappname="begim-egsubscriber-webapp"
+dotnet publish "..\src\eg-webhook-api\eg-webhook-api.csproj"
+$compress = @{
+  Path= "..\src\eg-webhook-api\bin\Debug\netcoreapp3.0\publish\*"
+  CompressionLevel = "Fastest"
+  DestinationPath = "eg-webhook-api.zip"
+}
+Compress-Archive @compress -Force
+$funcBname = $ResourcesPrefix + "-fn-b"
+az webapp deployment source config-zip  -g $RG -n $webappname --src "eg-webhook-api.zip"
+
+write-host "published web app source" -ForegroundColor Green
+
+# Event Grid
 
 ## create a subscription for the demo event grid and functionA => ConsunmeEventGridEvent function
 ##get a key
@@ -56,10 +72,11 @@ if ( $checkExistingSub.name -eq $egsubname ) {
     $EgfuncName= "ConsunmeEventGridEvent"
     # get sys key
     $resourceId  = "/subscriptions/$SubId/resourceGroups/$RG/providers/Microsoft.Web/sites/$funcAname"
-    $keys=az rest --method post --uri "$resourceId/host/default/listKeys?api-version=2018-11-01" | ConvertFrom-Json
-    $sysKey=$keys.systemKeys[0].eventgrid_extension
-    $funcEndpoint = "https://$funcAname.azurewebsites.net/runtime/webhooks/eventgrid?functionName=$EgfuncName^^^&code=$sysKey"
-    az eventgrid event-subscription create --name $egsubname --source-resource-id "/subscriptions/$SubId/resourceGroups/$RG/providers/Microsoft.EventGrid/topics/$topicName" --endpoint $funcEndpoint
+    #$keys=az rest --method post --uri "$resourceId/host/default/listKeys?api-version=2018-11-01" | ConvertFrom-Json
+    #$sysKey=$keys.systemKeys[0].eventgrid_extension
+    #$funcEndpoint = "https://$funcAname.azurewebsites.net/runtime/webhooks/eventgrid?functionName=$EgfuncName^^^&code=$sysKey"
+    $endpoint='https://entv8wvava2k.x.pipedream.net/'
+    az eventgrid event-subscription create --name $egsubname --source-resource-id "/subscriptions/$SubId/resourceGroups/$RG/providers/Microsoft.EventGrid/topics/$topicName" --endpoint $endpoint
 
 }
 
