@@ -1,0 +1,7 @@
+FROM mitmproxy/mitmproxy
+
+COPY scripts .
+COPY responses ./responses
+
+
+
