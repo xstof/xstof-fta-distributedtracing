@@ -74,6 +74,9 @@
               "ports": [
                 {
                   "port": "[parameters('port')]"
+                },
+                {
+                  "port": 8080
                 }
               ],
               "resources": {
@@ -83,130 +86,21 @@
                 }
               },
               "command": [
-                "php",
-                "artisan",
-                "queue:work",
-                "--daemon",
-                "--tries=3",
-                "--timeout=30"
+                "mitmweb",
+                "--web-iface",
+                "0.0.0.0",
+                "--listen-port",
+                "8888",
+                "--web-port",
+                "8080",
+                "-s",
+                "static-response.py",
+                 "--mode",
+                "transparent",
+                "--set",
+                "block_global=false"
               ] ,
               "environmentVariables": [
-                {
-                  "name": "APP_ENV",
-                  "value": "dev"
-                },
-                {
-                  "name": "APP_DEBUG",
-                  "value": "true"
-                },
-                {
-                  "name": "APP_URL",
-                  "value": "http://ipaicorr3-request-inspection.westeurope.azurecontainer.io"
-                },
-                {
-                  "name": "APP_LOG",
-                  "value": "errorlog"
-                },
-                {
-                  "name": "DB_CONNECTION",
-                  "value": "sqlite"
-                },
-                {
-                  "name": "REDIS_HOST",
-                  "value": "127.0.0.1:6379"
-                },
-                {
-                  "name": "BROADCAST_DRIVER",
-                  "value": "redis"
-                },
-                {
-                  "name": "CACHE_DRIVER",
-                  "value": "redis"
-                },
-                {
-                  "name": "QUEUE_DRIVER",
-                  "value": "redis"
-                },
-                {
-                  "name": "ECHO_HOST_MODE",
-                  "value": "path"
-                }
-              ]
-            }
-          },
-          {
-            "name": "redis",
-            "properties": {
-              "image": "redis:alpine",
-              "ports": [
-                {
-                  "port": 6379
-                }
-              ],
-              "resources": {
-                "requests": {
-                  "cpu": "[parameters('cpuCores')]",
-                  "memoryInGb": "[parameters('memoryInGb')]"
-                }
-              }
-            }
-          },
-          {
-            "name": "laravel-echo-server",
-            "properties": {
-              "image": "xstof/laravel-echo-server",
-              "ports": [
-                {
-                  "port": 6001
-                }
-              ],
-              "resources": {
-                "requests": {
-                  "cpu": "[parameters('cpuCores')]",
-                  "memoryInGb": "[parameters('memoryInGb')]"
-                }
-              },
-              "environmentVariables": [
-                {
-                  "name": "LARAVEL_ECHO_SERVER_AUTH_HOST",
-                  "value": "http://webhook"
-                },
-                {
-                  "name": "LARAVEL_ECHO_SERVER_HOST",
-                  "value": "0.0.0.0"
-                },
-                {
-                  "name": "LARAVEL_ECHO_SERVER_PORT",
-                  "value": "6001"
-                },
-                {
-                  "name": "ECHO_REDIS_PORT",
-                  "value": "6379"
-                },
-                {
-                  "name": "ECHO_REDIS_HOST",
-                  "value": "0.0.0.0"
-                },
-                {
-                  "name": "ECHO_PROTOCOL",
-                  "value": "http"
-                },
-                {
-                  "name": "ECHO_ALLOW_CORS",
-                  "value": "true"
-                },
-                {
-                  "name": "ECHO_ALLOW_ORIGIN",
-                  "value": "*"
-                },
-                {
-                  "name": "ECHO_ALLOW_METHODS",
-                  "value": "*"
-                },
-                {
-                  "name": "ECHO_ALLOW_HEADERS",
-                  "value": "*"
-                }
               ]
             }
           }
@@ -222,7 +116,7 @@
             },
             {
               "protocol": "Tcp",
-              "port": "6001"
+              "port": 8080
             }
           ],
           "dnsNameLabel": "[concat('ip', parameters('name'))]"
