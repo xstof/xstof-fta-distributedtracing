@@ -9,9 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Microsoft.ApplicationInsights.Extensibility;
-using Microsoft.ApplicationInsights.Extensibility.HostingStartup;
+
 
 namespace eg_webhook_api {
     public class Startup {
@@ -26,13 +24,6 @@ namespace eg_webhook_api {
             services.AddControllers ();
             services.AddApplicationInsightsTelemetry ();
 
-            services.AddSingleton<ITelemetryModule, FileDiagnosticsTelemetryModule>();
-            services.ConfigureTelemetryModule<FileDiagnosticsTelemetryModule>( (module, options) => {
-                module.LogFilePath = "C:\\AISDKLOGS";
-                module.LogFileName = "begimailogs.txt";
-                module.Severity = "Verbose";
-        
-            } );
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
