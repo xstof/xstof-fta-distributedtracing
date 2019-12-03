@@ -20,10 +20,9 @@
     },
     "variables": {
         "aciName": "[concat(parameters('resourcesPrefix'), '-', 'request-inspection')]",
-        "aciImage": "xstof/webhook.site",
-        "aciImagePort": "80",
-        "aciImage": "xstof/mitmproxy",
-        "aciImagePort": "8888",
+        "aciImage": "xstof/anyproxy",
+        "aciImagePort": "8080",
+        "eventGridTopicName": "[concat(parameters('resourcesPrefix'), '-', 'egtopic')]",
         "eventGridSubscriberWapName": "[concat(parameters('resourcesPrefix'), '-', 'egsubscriber-wap')]",
         "eventGridSubscriberAppName": "[concat(parameters('resourcesPrefix'), '-', 'egsubscriber-webapp')]",
         "eventGridSubscriberWap-ai-Name": "[concat(parameters('resourcesPrefix'), '-', 'egsubscriber-webapp-ai')]",
