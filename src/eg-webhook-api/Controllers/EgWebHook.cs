@@ -55,10 +55,24 @@ namespace eg_webhook_api.Controllers
             return Ok("hello world");
         }
 
+        private async void LogHeaders(){
+
+            if ( HttpContext.Request.Headers.Count == 0){
+                _logger.LogInformation($"NO Headers found");
+                return;
+            }
+       
+            foreach (var header in HttpContext.Request.Headers) {
+  
+                    _logger.LogInformation($"HEADERS: Header {header.Key} : {header.Value}");
+                }
+        }
+
         [HttpPost]
         public async Task<IActionResult> Post()
         {
-            
+            LogHeaders();
+
             using (var reader = new StreamReader(Request.Body, Encoding.UTF8))
             {
                 var jsonContent = await reader.ReadToEndAsync();

@@ -1,5 +1,4 @@
 
-GET http://localhost:5000/api/egwebhook
 
 
 # test Cloud event through EG - 
@@ -28,6 +27,8 @@ aeg-sas-key: 7dCVcy0te2hoXEb4lAc2UbUhEVL6RKgQPVqzEdDFqTA=
     "data" : { "message": "hello world"}
 }
 
+#test local
+GET http://localhost:5000/api/egwebhook
 
 # test published
 GET https://begim-egsubscriber-webapp.azurewebsites.net/api/egwebhook
