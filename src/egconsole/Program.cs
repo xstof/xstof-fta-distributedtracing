@@ -31,8 +31,7 @@ namespace egconsole
 
             using (var httpClient = new HttpClient())
             {
-                httpClient.DefaultRequestHeaders.Add("ContentType","application/cloudevents+json");
-                httpClient.DefaultRequestHeaders.Add("aeg-sas-key","7dCVcy0te2hoXEb4lAc2UbUhEVL6RKgQPVqzEdDFqTA=");
+      
                 var cloudEvent = new CloudEvent<dynamic>(){
                     SpecVersion = "1.0",
                     Type="com.example.someevent",
@@ -44,13 +43,22 @@ namespace egconsole
                     TraceParent = requestActivity.Id,
                     TraceState=$"MySubmissionId={submissionId}"
                 };
-                await httpClient.PostAsync("https://begim-egtopic-cs.westeurope-1.eventgrid.azure.net/api/events",new StringContent(JsonSerializer.Serialize(cloudEvent)));
+                var httpRequest = new HttpRequestMessage(HttpMethod.Post,"https://begim-egtopic-cs.westeurope-1.eventgrid.azure.net/api/events");
+                httpRequest.Content = new StringContent(JsonSerializer.Serialize(cloudEvent));
+                //httpRequest.Content.Headers.Add("Content-Type","application/cloudevents+json");
+                httpRequest.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/cloudevents+json");
+                httpRequest.Headers.Add("aeg-sas-key","7dCVcy0te2hoXEb4lAc2UbUhEVL6RKgQPVqzEdDFqTA=");
+                var result =await httpClient.SendAsync(httpRequest);
+
+                Console.WriteLine($"Console App Closes EG publish {result.StatusCode}");
+                client.TrackTrace($"Console App Closes EG publish {result.StatusCode}");
             }
 
-            client.TrackTrace($"Console App Closes");
+
 
             client.StopOperation(requestOperation);
-
+            client.Flush();
+ 
             Console.WriteLine("Hello World!");
             Console.ReadLine();
         }
