@@ -113,6 +113,10 @@
     "containerIPv4Address": {
       "type": "string",
       "value": "[reference(resourceId('Microsoft.ContainerInstance/containerGroups/', parameters('name'))).ipAddress.ip]"
+    },
+    "proxyBaseAddress": {
+      "type": "string",
+      "value": "[concat('http://', reference(resourceId('Microsoft.ContainerInstance/containerGroups/', parameters('name'))).ipAddress.ip, ':8080/')]"
     }
   }
 }
