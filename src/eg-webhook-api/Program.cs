@@ -17,16 +17,11 @@ namespace eg_webhook_api
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
-            Host.CreateDefaultBuilder(args)
-                .ConfigureLogging(logging =>
+            Host.CreateDefaultBuilder(args).ConfigureWebHostDefaults(webBuilder =>
                 {
-                    logging.ClearProviders();
-                    logging.AddConsole();
-                    logging.AddApplicationInsights();
-                })
-                .ConfigureWebHostDefaults(webBuilder =>
-                {
-                    webBuilder.UseStartup<Startup>();
+                    webBuilder.UseStartup<Startup>().ConfigureLogging(logging =>
+                        logging.AddFilter<Microsoft.Extensions.Logging.ApplicationInsights.ApplicationInsightsLoggerProvider>("", LogLevel.Information)
+                        .AddFilter<Microsoft.Extensions.Logging.ApplicationInsights.ApplicationInsightsLoggerProvider>("Microsoft", LogLevel.Information));
                 });
     }
 }   
