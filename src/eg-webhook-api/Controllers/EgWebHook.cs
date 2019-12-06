@@ -8,6 +8,10 @@ using System.IO;
 using System.Text;
 using System.Text.Json;
 using eg_webhook_api;
+using Microsoft.ApplicationInsights;
+using Microsoft.ApplicationInsights.DataContracts;
+using Microsoft.ApplicationInsights.Extensibility;
+using System.Diagnostics;
 
 namespace eg_webhook_api.Controllers
 {
@@ -16,6 +20,7 @@ namespace eg_webhook_api.Controllers
     public class EgWebHookController : ControllerBase
     {
         private readonly ILogger<EgWebHookController> _logger;
+        private readonly TelemetryClient _telemClient;
 
         private bool EventTypeSubcriptionValidation
             => HttpContext.Request.Headers["aeg-event-type"].FirstOrDefault() ==
@@ -25,9 +30,14 @@ namespace eg_webhook_api.Controllers
             => HttpContext.Request.Headers["aeg-event-type"].FirstOrDefault() ==
             "Notification";
 
-        public EgWebHookController(ILogger<EgWebHookController> logger)
+         private string AEGSubscriptionName
+            => HttpContext.Request.Headers["aeg-subscription-name"].FirstOrDefault() ;
+
+        // correct way to obtain a AI telem client in ASP NET CORE is via the DI 
+        public EgWebHookController(ILogger<EgWebHookController> logger, TelemetryClient telemClient)
         {
             _logger = logger;
+            _telemClient = telemClient;
         }
 
         [HttpOptions]
@@ -140,7 +150,7 @@ namespace eg_webhook_api.Controllers
                 var version = details.SpecVersion;
                 if (!string.IsNullOrEmpty(version)) {
                     cloudEvent=details;
-                    LogCloudEvent(details as CloudEventExtendedTrace);
+                    LogAppInsightsDependencyFromCloudEventSource(details.TraceParent, details.TraceState);
                     return true;
                 }
             }
@@ -152,8 +162,31 @@ namespace eg_webhook_api.Controllers
             return false;
         }
 
-        private void LogCloudEvent(CloudEventExtendedTrace cloudEvent){
-            
+        private void LogAppInsightsDependencyFromCloudEventSource(string traceParent, string traceState){
+            if ( !string.IsNullOrEmpty (traceParent)){
+                _logger.LogInformation($"traceparent={traceParent}");
+                Activity.Current.AddTag("TraceParent", traceParent);
+                AddAnyActivityBaggage(Activity.Current, traceState);
+                var op=_telemClient.StartOperation<DependencyTelemetry>(AEGSubscriptionName,Activity.Current.OperationName,traceParent);
+   
+                _telemClient.StopOperation(op);
+
+            }
         } 
+
+        private void AddAnyActivityBaggage(Activity curActivity,string currentBaggage){
+            if (string.IsNullOrWhiteSpace(currentBaggage)){
+                return;
+            }
+            var baggageList=currentBaggage.Split(",", StringSplitOptions.RemoveEmptyEntries).ToList();
+
+            foreach(var baggageItem in baggageList){
+                if ( baggageItem.Contains("=")){
+                    var tmp = baggageItem.Split("=");
+                    curActivity.AddBaggage(tmp[0],tmp[1]);
+                }
+            }
+
+        }
     }
 }

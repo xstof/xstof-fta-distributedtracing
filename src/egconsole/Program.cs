@@ -40,7 +40,7 @@ namespace egconsole
                     Time = DateTime.UtcNow.ToString(),
                     DataContentType = "application/json",
                     Data=null,
-                    TraceParent = requestActivity.Id,
+                    TraceParent = requestActivity.RootId,
                     TraceState=$"MySubmissionId={submissionId}"
                 };
                 var httpRequest = new HttpRequestMessage(HttpMethod.Post,"https://begim-egtopic-cs.westeurope-1.eventgrid.azure.net/api/events");
