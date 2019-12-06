@@ -24,7 +24,7 @@ namespace eg_webhook_api{
         public string Topic { get; set; }
     }
 
-    public class CloudEvent<T> where T : class
+    public class CloudEvent<T> : CloudEventExtendedTrace where T : class
     {
 
         // Spec https://github.com/cloudevents/spec/blob/v1.0/spec.md
@@ -54,6 +54,9 @@ namespace eg_webhook_api{
         public string DataContentType { get; set; }
 
 
+    }
+    public class CloudEventExtendedTrace {
+
         // trace extension properties https://github.com/cloudevents/spec/blob/v1.0/extensions/distributed-tracing.md
 
         [JsonPropertyName("traceparent")]
@@ -61,6 +64,5 @@ namespace eg_webhook_api{
 
         [JsonPropertyName("tracestate")]
         public string TraceState { get; set; }
-
     }
 }

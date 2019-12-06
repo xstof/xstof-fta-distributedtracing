@@ -127,7 +127,7 @@ namespace eg_webhook_api.Controllers
             return Ok();
         }
 
-        private static bool IsCloudEvent(string jsonContent, out CloudEvent<dynamic> cloudEvent)
+        private bool IsCloudEvent(string jsonContent, out CloudEvent<dynamic> cloudEvent)
         {
             cloudEvent=null;
 
@@ -140,6 +140,7 @@ namespace eg_webhook_api.Controllers
                 var version = details.SpecVersion;
                 if (!string.IsNullOrEmpty(version)) {
                     cloudEvent=details;
+                    LogCloudEvent(details as CloudEventExtendedTrace);
                     return true;
                 }
             }
@@ -150,5 +151,9 @@ namespace eg_webhook_api.Controllers
 
             return false;
         }
+
+        private void LogCloudEvent(CloudEventExtendedTrace cloudEvent){
+            
+        } 
     }
 }

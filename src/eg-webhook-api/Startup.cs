@@ -44,11 +44,6 @@ namespace eg_webhook_api {
             });
 
 
-
-                // Call the next delegate/middleware in the pipeline
-                await next ();
-            });
-
         }
     }
 }
