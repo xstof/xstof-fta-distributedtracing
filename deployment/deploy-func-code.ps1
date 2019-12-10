@@ -64,9 +64,17 @@ $egsubname = "eg-cs-sub"
 $azsubscription= az account show | ConvertFrom-Json
 $SubId = $azsubscription.Id
 
+# check cli extension
+$aegExt = az extension show -n eventgrid | ConvertFrom-Json
+if ( $aegExt ){
+  write-host "removing old cli eventgrid extension"
+  az extension remove -n eventgrid
+}
+write-host "adding cli eventgrid extension"
+az extension add -n eventgrid
 # create topic (see note below)
 
-$topicDetails = az eventgrid topic show --name $topicName --resource-group $RG --subscription $SubId | ConvertTo-Json
+$topicDetails = az eventgrid topic show --name $topicName --resource-group $RG --subscription $SubId | ConvertFrom-Json
 
 if (! $topicDetails){
   write-host "no topic found"
