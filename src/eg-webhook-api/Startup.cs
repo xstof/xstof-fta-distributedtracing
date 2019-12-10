@@ -24,6 +24,7 @@ namespace eg_webhook_api {
         public void ConfigureServices (IServiceCollection services) {
             services.AddControllers ();
             services.AddApplicationInsightsTelemetry ();
+            services.AddHttpClient();
            
         }
 

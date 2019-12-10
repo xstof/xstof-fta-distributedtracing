@@ -47,6 +47,7 @@ namespace egconsole
                 httpRequest.Content = new StringContent(JsonSerializer.Serialize(cloudEvent));
                 //httpRequest.Content.Headers.Add("Content-Type","application/cloudevents+json");
                 httpRequest.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/cloudevents+json");
+                // obtain the key for your AEG deployment
                 httpRequest.Headers.Add("aeg-sas-key","7dCVcy0te2hoXEb4lAc2UbUhEVL6RKgQPVqzEdDFqTA=");
                 var result =await httpClient.SendAsync(httpRequest);
 

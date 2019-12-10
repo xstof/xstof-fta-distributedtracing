@@ -90,13 +90,12 @@ if ( $checkExistingSub.name -eq $egsubname ) {
     # if exchanging web app for a func endpoint dont forget to escape "&" (query string) with "^^^&"
     $endpoint="https://$webappname.azurewebsites.net/api/egwebhook"
 
-# IMPORTANT NOTE: Using Cloud Schema requires an AZ extension (for BOTH topic AND subscription)
-# https://docs.microsoft.com/en-us/azure/event-grid/cloudevents-schema
-# handshake is also different , uses OPTIONS verb as decribed here: https://github.com/cloudevents/spec/blob/v1.0/http-webhook.md#4-abuse-protection
+    # IMPORTANT NOTE: Using Cloud Schema requires an AZ extension (for BOTH topic AND subscription)
+    # https://docs.microsoft.com/en-us/azure/event-grid/cloudevents-schema
+    # handshake is also different , uses OPTIONS verb as decribed here: https://github.com/cloudevents/spec/blob/v1.0/http-webhook.md#4-abuse-protection
 
-      #setup for a web app custom webhook endpoint (cloud event schema requires custom endpoint)
+    #setup for a web app custom webhook endpoint (cloud event schema requires custom endpoint)
     az eventgrid event-subscription create --name $egsubname --source-resource-id "/subscriptions/$SubId/resourceGroups/$RG/providers/Microsoft.EventGrid/topics/$topicName" --endpoint $endpoint  --event-delivery-schema cloudeventschemav1_0
-
 }
 
 ## for testing using VS Code .http the following are required to post an event

@@ -6,12 +6,14 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.IO;
 using System.Text;
+using System.Net.Http;
 using System.Text.Json;
 using eg_webhook_api;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.ApplicationInsights.Extensibility;
 using System.Diagnostics;
+using Microsoft.Extensions.Configuration;
 
 namespace eg_webhook_api.Controllers
 {
@@ -21,6 +23,8 @@ namespace eg_webhook_api.Controllers
     {
         private readonly ILogger<EgWebHookController> _logger;
         private readonly TelemetryClient _telemClient;
+        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IConfiguration _config;
 
         private bool EventTypeSubcriptionValidation
             => HttpContext.Request.Headers["aeg-event-type"].FirstOrDefault() ==
@@ -34,10 +38,12 @@ namespace eg_webhook_api.Controllers
             => HttpContext.Request.Headers["aeg-subscription-name"].FirstOrDefault() ;
 
         // correct way to obtain a AI telem client in ASP NET CORE is via the DI 
-        public EgWebHookController(ILogger<EgWebHookController> logger, TelemetryClient telemClient)
+        public EgWebHookController(ILogger<EgWebHookController> logger, TelemetryClient telemClient, IHttpClientFactory httpClient, IConfiguration config)
         {
+            _config = config;
             _logger = logger;
             _telemClient = telemClient;
+            _httpClientFactory = httpClient;
         }
 
         [HttpOptions]
@@ -150,7 +156,7 @@ namespace eg_webhook_api.Controllers
                 var version = details.SpecVersion;
                 if (!string.IsNullOrEmpty(version)) {
                     cloudEvent=details;
-                    LogAppInsightsDependencyFromCloudEventSource(details.TraceParent, details.TraceState);
+                    WriteAppInsightsDependencyFromCloudEventSource(details.TraceParent, details.TraceState);
                     return true;
                 }
             }
@@ -162,16 +168,27 @@ namespace eg_webhook_api.Controllers
             return false;
         }
 
-        private void LogAppInsightsDependencyFromCloudEventSource(string traceParent, string traceState){
+        private void WriteAppInsightsDependencyFromCloudEventSource(string traceParent, string traceState){
             if ( !string.IsNullOrEmpty (traceParent)){
                 _logger.LogInformation($"traceparent={traceParent}");
-                Activity.Current.AddTag("TraceParent", traceParent);
+                // this wont get traced with the dependency
+                Activity.Current.AddTag("MyTag", "MyTagValue");
+                // this should make it to further calls
                 AddAnyActivityBaggage(Activity.Current, traceState);
-                var op=_telemClient.StartOperation<DependencyTelemetry>(AEGSubscriptionName,Activity.Current.OperationName,traceParent);
-   
-                _telemClient.StopOperation(op);
+                // track the event as a dependency based on the subscription for the event
+                var aegSubDependency = new DependencyTelemetry();
+                aegSubDependency.Name = $"Triggered by AEG Subscription {AEGSubscriptionName}";
+                aegSubDependency.Id = traceParent;
+                _telemClient.TrackDependency(aegSubDependency);
 
+                // show headers
+                var pastebinurl=_config.GetValue<string>("PasteBinUrl", "");
+                if ( !string.IsNullOrEmpty(pastebinurl)){
+                    var httpClient = _httpClientFactory.CreateClient();
+                    httpClient.GetAsync(pastebinurl);
+                }
             }
+
         } 
 
         private void AddAnyActivityBaggage(Activity curActivity,string currentBaggage){

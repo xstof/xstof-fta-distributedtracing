@@ -176,12 +176,65 @@ The Sample for Event Grid has the following components:
 > Note: Event Grid requires [special configuration for Cloud Events](https://docs.microsoft.com/en-us/azure/event-grid/cloudevents-schema); a CLI extension and a specific Topic, Subscription and CloudEvent-Schema Message-payload with the receiving app implementing the HTTP Options based validation handshake.
 >
 > The ASP Net core App Event webhook used here is derived from this [Azure Event Viewer Sample](https://docs.microsoft.com/en-us/samples/azure-samples/azure-event-grid-viewer/azure-event-grid-viewer/).
+> A proxy with scripting could also be used.
 
+The console app begins by submitting a request telemetry item (this is a console app so there is no request pipeline for the AI SDK).
+Note that as with the functions we have the "submissionId" GUID which will represent context that we wish to "travel" with the related Telemetry.
 
+~~~cs
+            var submissionId = Guid.NewGuid().ToString();
+            var requestActivity = new Activity("Console App Start");
+            requestActivity.Start();
+            requestActivity.AddBaggage("MySubmissionId", submissionId);
+            var requestOperation = client.StartOperation<RequestTelemetry>(requestActivity);
+~~~
 
+However, because AEG does not yet natively support App Insights correlation we're going to have to ensure the operation and baggage are transmitted in the event body using the cloud event schema extension properties that exist for this reason.
 
+> Note that TraceParent is set from the Activity Id for the request Telemetry which represents the console app start - above.
 
+~~~cs
+                var cloudEvent = new CloudEvent<dynamic>(){
+                    SpecVersion = "1.0",
+                    Type="com.example.someevent",
+                    Source="MyContent",
+                    Id ="A234-1234-1234",
+                    Time = DateTime.UtcNow.ToString(),
+                    DataContentType = "application/json",
+                    Data=null,
+                    TraceParent = requestActivity.RootId,
+                    TraceState=$"MySubmissionId={submissionId}"
+                };
+~~~
 
+Here's the Telemetry for the Console App as traced in App Insights
+
+![aeg-sender](./images/aeg-sender.JPG)
+
+Note the operation Id in the snip above.
+
+Here are the receiver events
+
+![aeg-subscriber](./images/aeg-subscriber.JPG)
+
+Note the operation Id is different (which is expected) but the dependency Id for the dependency telemetry which was written from the subscriber web app like this:
+
+~~~cs
+// traceParent is read from the cloud event body
+// The AEG subscription name is from the incoming request header from the message triggering the webhook
+var aegSubDependency = new DependencyTelemetry();
+aegSubDependency.Name = $"Triggered by AEG Subscription {AEGSubscriptionName}";
+aegSubDependency.Id = traceParent;
+_telemClient.TrackDependency(aegSubDependency);
+~~~
+
+Exists as Dependency Id for the dependency-telemetry and this is indeed the operation id carried in the event body from the original submission in the console app.
+
+![aeg-subscriber-props](./images/aeg-subscriber-props.JPG)
+
+THe baggage "MySubmissionId" added above makes it to the subscriber via the Event body (TraceState property) and is added to the activity in the subscriber app and therefore shows as a custom property to the custom dependency item we wrote out in the subscriber app on Event recieve. 
+
+![aeg-subscriber-baggage](./images/aeg-subscriber-baggage.JPG)
 
 ### << TO EDIT below this point >> 
 
@@ -196,7 +249,7 @@ When using the `Activity` class to add custom properties to the recorded telemet
   currActivity.AddBaggage("MySubmissionIdThroughBagage", submissionId);
 ~~~
 
-Note how the call to `Activity.AddTag(..)` did _not_ result in anything being recorded on the dependency telemetry item.  Also, when used in our Function to enqueue an item, the metadata on that item would not show those tags.  This is different for `Activity.AddBagage`.  The enqueued message in this case, shows metadata like:
+Note how the call to `Activity.AddTag(..)` did _not_ result in anything being recorded on the dependency telemetry item.  Also, when used in our Function to enqueue an item, the metadata on that item would not show those tags.  This is different for `Activity.AddBagage`.  The enqueued message in this case, shows metadata like
 
 | Property                 | Value                                                               |
 | ------------             | -----------------------------------                                 |
