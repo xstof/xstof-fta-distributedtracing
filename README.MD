@@ -167,9 +167,9 @@ Unlike the scenario with Service Bus, Event Grid does not flow distributed compo
 
 The Sample for Event Grid has the following components:
 
-- Event Grid Topic
-- Console App to enqueue Events (this could have been a straight HTTP call but this misses information added by App Insights)
-- A ASP Net Core Web App which will host a Web Hook to receive the [CloudEvent (preview)](https://github.com/cloudevents/spec/blob/v1.0/spec.md) and is capable of showing both the incoming request headers and also implements the required HTTP OPTIONS verb implementation for the Event Grid validation Handshake (which differs from the usual Event Grid validation sequence).
+- Azure Event Grid Topic
+- Net Core Console App to enqueue Events (this could have been a straight HTTP call but this misses information added by App Insights)
+- ASP Net Core Web App which will host a Web Hook to receive the [CloudEvent (preview)](https://github.com/cloudevents/spec/blob/v1.0/spec.md) and is capable of showing both the incoming request headers and also provides the required HTTP OPTIONS verb implementation for the Event Grid validation Handshake (which differs from the usual Event Grid validation sequence).
 - Event Grid Subscription for the Web Hook
 - App Insights Resource for the Sender Console App and the Subscriber ASP Net App.
 
@@ -183,7 +183,9 @@ The Sample for Event Grid has the following components:
 
 
 
-### Fn A -> Service Bus -> Fn B (with custom code to correlate across workspaces using a custom correlation id)
+### << TO EDIT below this point >> 
+
+Fn A -> Service Bus -> Fn B (with custom code to correlate across workspaces using a custom correlation id)
 
 When using the `Activity` class to add custom properties to the recorded telemetry, one can also use the `Activity Bagage` to indicate any information to be passed on to all dependencies.  To pass on a custom property to a dependency:
 
