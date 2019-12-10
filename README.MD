@@ -182,11 +182,11 @@ The console app begins by submitting a request telemetry item (this is a console
 Note that as with the functions we have the "submissionId" GUID which will represent context that we wish to "travel" with the related Telemetry.
 
 ~~~cs
-            var submissionId = Guid.NewGuid().ToString();
-            var requestActivity = new Activity("Console App Start");
-            requestActivity.Start();
-            requestActivity.AddBaggage("MySubmissionId", submissionId);
-            var requestOperation = client.StartOperation<RequestTelemetry>(requestActivity);
+  var submissionId = Guid.NewGuid().ToString();
+  var requestActivity = new Activity("Console App Start");
+  requestActivity.Start();
+  requestActivity.AddBaggage("MySubmissionId", submissionId);
+  var requestOperation = client.StartOperation<RequestTelemetry>(requestActivity);
 ~~~
 
 However, because AEG does not yet natively support App Insights correlation we're going to have to ensure the operation and baggage are transmitted in the event body using the cloud event schema extension properties that exist for this reason.
@@ -194,17 +194,17 @@ However, because AEG does not yet natively support App Insights correlation we'r
 > Note that TraceParent is set from the Activity Id for the request Telemetry which represents the console app start - above.
 
 ~~~cs
-                var cloudEvent = new CloudEvent<dynamic>(){
-                    SpecVersion = "1.0",
-                    Type="com.example.someevent",
-                    Source="MyContent",
-                    Id ="A234-1234-1234",
-                    Time = DateTime.UtcNow.ToString(),
-                    DataContentType = "application/json",
-                    Data=null,
-                    TraceParent = requestActivity.RootId,
-                    TraceState=$"MySubmissionId={submissionId}"
-                };
+var cloudEvent = new CloudEvent<dynamic>(){
+  SpecVersion = "1.0",
+  Type="com.example.someevent",
+  Source="MyContent",
+  Id ="A234-1234-1234",
+  Time = DateTime.UtcNow.ToString(),
+  DataContentType = "application/json",
+  Data=null,
+  TraceParent = requestActivity.RootId,
+  TraceState=$"MySubmissionId={submissionId}"
+};
 ~~~
 
 Here's the Telemetry for the Console App as traced in App Insights
@@ -217,7 +217,7 @@ Here are the receiver events
 
 ![aeg-subscriber](./images/aeg-subscriber.JPG)
 
-Note the operation Id is different (which is expected) but the dependency Id for the dependency telemetry which was written from the subscriber web app like this:
+Note the operation Id is different (which is expected) but the dependency Id (the AI operation-id from the console app) is correct for the dependency telemetry which was written from the subscriber web app like this:
 
 ~~~cs
 // traceParent is read from the cloud event body
@@ -240,7 +240,7 @@ THe baggage "MySubmissionId" added above makes it to the subscriber via the Even
 
 Fn A -> Service Bus -> Fn B (with custom code to correlate across workspaces using a custom correlation id)
 
-When using the `Activity` class to add custom properties to the recorded telemetry, one can also use the `Activity Bagage` to indicate any information to be passed on to all dependencies.  To pass on a custom property to a dependency:
+When using the `Activity` class to add custom properties to the recorded telemetry, one can also use the `Activity Baggage` to indicate any information to be passed on to all dependencies.  To pass on a custom property to a dependency:
 
 ~~~cs
   using System.Diagnostics;
