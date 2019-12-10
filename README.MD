@@ -161,12 +161,21 @@ Note the [Service Bus Explorer](https://github.com/paolosalvatori/ServiceBusExpl
 
 ![svcbus-metadata](./images/svcbus-metadata.png)
 
+### **Scenario 3: Event Grid**
 
+Unlike the scenario with Service Bus, Event Grid does not flow distributed component correlation for App Insights or any other APM today. However, the preview [CloudEvents Schema](https://github.com/cloudevents/spec/blob/v1.0/spec.md) does support an [extension for trace properties](https://github.com/cloudevents/spec/blob/v1.0/extensions/distributed-tracing.md).
 
+The Sample for Event Grid has the following components:
 
+- Event Grid Topic
+- Console App to enqueue Events (this could have been a straight HTTP call but this misses information added by App Insights)
+- A ASP Net Core Web App which will host a Web Hook to receive the [CloudEvent (preview)](https://github.com/cloudevents/spec/blob/v1.0/spec.md) and is capable of showing both the incoming request headers and also implements the required HTTP OPTIONS verb implementation for the Event Grid validation Handshake (which differs from the usual Event Grid validation sequence).
+- Event Grid Subscription for the Web Hook
+- App Insights Resource for the Sender Console App and the Subscriber ASP Net App.
 
-
-
+> Note: Event Grid requires [special configuration for Cloud Events](https://docs.microsoft.com/en-us/azure/event-grid/cloudevents-schema); a CLI extension and a specific Topic, Subscription and CloudEvent-Schema Message-payload with the receiving app implementing the HTTP Options based validation handshake.
+>
+> The ASP Net core App Event webhook used here is derived from this [Azure Event Viewer Sample](https://docs.microsoft.com/en-us/samples/azure-samples/azure-event-grid-viewer/azure-event-grid-viewer/).
 
 
 
