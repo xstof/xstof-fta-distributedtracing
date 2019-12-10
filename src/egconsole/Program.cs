@@ -59,7 +59,7 @@ namespace egconsole
             client.StopOperation(requestOperation);
             client.Flush();
  
-            Console.WriteLine("Hello World!");
+            Console.WriteLine("Event Submitted!");
             Console.ReadLine();
         }
     }

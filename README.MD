@@ -22,16 +22,31 @@ See:
 
 ## Scenarios
 
-### Fn A -> Service Bus
+### **Azure Function to Azure Service Bus**
 
-**Scenario**: Function A submits message into Service Bus Queue
+#### **Scenario**
+
+'FunctionA' enqueues a message to Service Bus
 
 - no custom correlation code in function
 - no special configuration on Service Bus
 
-**Results**: 
+#### The Test
 
-Works out of box
+~~~ps
+
+# Function: InitiateFlowToQueue
+
+@submissionid = {{$guid}}
+POST {{protocol}}://{{hosta}}/api/queue/{{submissionid}} HTTP/1.1
+
+~~~
+
+Submits an HTTP POST to the deployed Function App A - with a submission Id. The submission id, a guid here, is simply an identifier that represents correlation for the user or application activity. What does that mean? Consider a user, logged into a e-commerce website - the website activity may depend on a number of service calls. In this example the submission-id could represent the user session, it's  
+
+#### **Results**
+
+Because both Functions Runtime v2.0 and Azure Service Bus support the required correlation headers this scenario will work out of box!
 
 - Submission Id:        7eaeb56f-1a9f-451f-9e55-ffc54acc12e7
 - Fn request properties in App Insights (telemetrytype: 'request'):
