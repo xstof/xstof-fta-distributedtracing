@@ -52,12 +52,12 @@ namespace egconsole
                     TraceState=$"MySubmissionId={submissionId}"
                 };
 
-                var httpRequest = new HttpRequestMessage(HttpMethod.Post,"https://aicorr4-egtopic.westeurope-1.eventgrid.azure.net/api/events");
+                var httpRequest = new HttpRequestMessage(HttpMethod.Post,"https://aicorr4-egtopic-cs.westeurope-1.eventgrid.azure.net/api/events");
                 httpRequest.Content = new StringContent(JsonSerializer.Serialize(cloudEvent));
                 //httpRequest.Content.Headers.Add("Content-Type","application/cloudevents+json");
                 httpRequest.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/cloudevents+json");
                 // obtain the key for your AEG deployment
-                httpRequest.Headers.Add("aeg-sas-key","ot+5ematcxjQq3zn7MXOk14jznUJ5auWUPlUWL2Z4EQ=");
+                httpRequest.Headers.Add("aeg-sas-key","uzQg+BiUSRIQc0i2/9DNqcSPt8x+lNLNnSKTH3DBL2k=");
 
                 var result =await httpClient.SendAsync(httpRequest);
 
