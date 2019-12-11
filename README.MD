@@ -237,7 +237,11 @@ var op = _telemClient.StartOperation<RequestTelemetry>($"HandleCloudEvent {AEGSu
 Note that we've de-serialized the event payload ("details" variable) and we're unpacking the value in the "traceparent" field set in the context app and using the operation id (the second value) and the request id (the third value) as the parent. This is what causes the "handlecloudevent...." telemetry in the screen snip above to be a child of the telemetry for the event submission.
 
 > Note: Today this only renders in the end-to-end view this way because both console app and subscriber app write to the same app insights resource. Also note the "duration" is incorrect. This is because we're not setting the operation start and stop correctly.
+> Today, using a single AI resource you should also be able to see a relationship between sender and subscriber apps on the App Map.
 
+![aeg-sender-appmap](./images/aeg-sender-appmap.JPG)
+
+The subscriber is the "-webapp" resource, the console app is marked with the red cross.
 
 ### << begim TO EDIT below this point >>
 
