@@ -27,11 +27,15 @@ namespace egconsole
             config.TelemetryInitializers.Add(new HttpDependenciesParsingTelemetryInitializer());
             var client = new TelemetryClient(config);
 
+            // start req operation
+            var reqOp = client.StartOperation<RequestTelemetry>("ConsoleStart");
+            var operationId = reqOp.Telemetry.Id.Replace("|", "").Split('.')[0];
+            var requestId = reqOp.Telemetry.Id.Replace("|", "").Split('.')[1];
+
             var submissionId = Guid.NewGuid().ToString();
-            var requestActivity = new Activity("Console App Start");
-            requestActivity.Start();
-            requestActivity.AddBaggage("MySubmissionId", submissionId);
-            var requestOperation = client.StartOperation<RequestTelemetry>(requestActivity);
+            
+            // start dep operation
+            var dependencyOperation = client.StartOperation<DependencyTelemetry>($"EventGridDependency", operationId, requestId );
 
             using (var httpClient = new HttpClient())
             {
@@ -44,7 +48,7 @@ namespace egconsole
                     Time = DateTime.UtcNow.ToString(),
                     DataContentType = "application/json",
                     Data=null,
-                    TraceParent = requestActivity.RootId,
+                    TraceParent = Activity.Current.Id,   // <= check this out :-)
                     TraceState=$"MySubmissionId={submissionId}"
                 };
 
@@ -57,13 +61,16 @@ namespace egconsole
 
                 var result =await httpClient.SendAsync(httpRequest);
 
+                //stop dep operation
+                client.StopOperation(dependencyOperation);
+
+                // stop req operation
+                client.StopOperation(reqOp);
+
                 Console.WriteLine($"Console App Closes EG publish {result.StatusCode}");
                 client.TrackTrace($"Console App Closes EG publish {result.StatusCode}");
             }
-
-
-
-            client.StopOperation(requestOperation);
+            
             client.Flush();
  
             Console.WriteLine("Event Submitted!");
