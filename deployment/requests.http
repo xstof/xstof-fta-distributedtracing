@@ -1,5 +1,5 @@
-@hostnamea = aicorr3-fn-a.azurewebsites.net
-@hostnameb = aicorr3-fn-b.azurewebsites.net
+@hostnamea = aicorr4-fn-a.azurewebsites.net
+@hostnameb = aicorr4-fn-b.azurewebsites.net
 ## if needed declare host and port e.g. localhost:8080
 @hosta = {{hostnamea}}
 @hostb = {{hostnameb}}

@@ -27,11 +27,13 @@ namespace FTA.AICorrelation
         private readonly string _httpBinHost;
         private readonly string _httpBinUrl;
 
+        private readonly string _httpProxyBaseUrl;
+
         public FunctionAppA(IHttpClientFactory clientFactory){
-            // fetch url for external http req inspection service
             this._httpClient = clientFactory.CreateClient();
-            this._httpBinHost = Environment.GetEnvironmentVariable("httpBinIp", EnvironmentVariableTarget.Process);
-            this._httpBinUrl = "http://requestbin.net/r/1nvwpun1";
+
+            // fetch url for external http req inspection service
+            this._httpProxyBaseUrl = Environment.GetEnvironmentVariable("httpProxyBaseUrl", EnvironmentVariableTarget.Process);
 
             // fetch url for logic app A
             this._logicAppAUrl = Environment.GetEnvironmentVariable("logicAppAUrl", EnvironmentVariableTarget.Process);
@@ -109,7 +111,7 @@ namespace FTA.AICorrelation
             dynamic data = JsonConvert.DeserializeObject(requestBody);
             
             // sending to http bin container which runs in ACI
-            await _httpClient.GetAsync(_httpBinUrl);
+            await _httpClient.GetAsync(_httpProxyBaseUrl);
 
             return (ActionResult)new OkObjectResult($"");
         }
