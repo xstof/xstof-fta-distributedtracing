@@ -69,6 +69,13 @@
           "description": "Ip address of the Http Bin service to send HTTP requests to"
         }
       },
+      "httpProxyBaseUrl":{
+        "type": "string",
+        "defaultValue": "",
+        "metadata": {
+          "description": "Address of the proxy service which allows HTTP request inspection"
+        }
+      },
       "logicAppAUrl": {
         "type": "string",
         "defaultValue": ""
@@ -169,6 +176,11 @@
                 "name": "httpBinIp",
                 "defaultValue": "",
                 "value": "[parameters('httpBinIp')]"
+              },
+              {
+                "name": "httpProxyBaseUrl",
+                "defaultValue": "",
+                "value": "[parameters('httpProxyBaseUrl')]"
               },
               {
                 "name": "logicAppAUrl",

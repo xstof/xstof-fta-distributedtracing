@@ -3,11 +3,11 @@ Param(
   [Parameter(Mandatory=$True)]
   [string]$RG,
 
-  [Parameter(Mandatory=$True)]
+  [Parameter(Mandatory=$False)]
   [string]$Location="westeurope",
 
   [Parameter(Mandatory=$False)]
-  [string]$ResourcesPrefix="aicorr2"
+  [string]$ResourcesPrefix="aicorr4"
 )
 
 #az login
