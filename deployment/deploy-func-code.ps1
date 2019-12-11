@@ -42,7 +42,6 @@ az functionapp deployment source config-zip  -g $RG -n $funcBname --src "Functio
 write-host "published function app B source" -ForegroundColor Green
 
 # Web App
-$webappname="$ResourcesPrefix-egsubscriber-webapp"
 dotnet publish "..\src\eg-webhook-api\eg-webhook-api.csproj"
 $compress = @{
   Path= "..\src\eg-webhook-api\bin\Debug\netcoreapp3.0\publish\*"
@@ -50,7 +49,7 @@ $compress = @{
   DestinationPath = "eg-webhook-api.zip"
 }
 Compress-Archive @compress -Force
-$funcBname = $ResourcesPrefix + "-fn-b"
+$webappname="$ResourcesPrefix-egsubscriber-webapp"
 az webapp deployment source config-zip  -g $RG -n $webappname --src "eg-webhook-api.zip"
 
 write-host "published web app source" -ForegroundColor Green
