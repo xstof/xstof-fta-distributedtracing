@@ -137,8 +137,29 @@ namespace eg_webhook_api.Controllers
             sb.AppendLine(details.Subject);
             sb.AppendLine(details.Time);
  
+            // we received cloud event - need to create request telemetry to record the start of new activity with the incoming traceparent as our new parent activity
+            // var r = new RequestTelemetry(
+            //     name: $"HandleCloudEvent {AEGSubscriptionName}",
+            //     startTime: DateTimeOffset.Now,
+            //     duration: TimeSpan.FromSeconds(1),
+            //     responseCode: "200",
+            //     success: true)
+            // {
+            //     Source = "" //no source specified
+            // };
+            //_telemClient.TrackRequest(r);
+
+            // r.Context.Operation.Id = details.TraceParent.Split('-')[1];             // initiate the logical operation ID (trace id)
+            // r.Context.Operation.ParentId = details.TraceParent.Split('-')[2];       // this is the first span in a trace
+
+            // Start Operation
+            var op = _telemClient.StartOperation<RequestTelemetry>($"HandleCloudEvent {AEGSubscriptionName}", details.TraceParent.Split('-')[1], details.TraceParent.Split('-')[2]);
 
             _logger.LogInformation(sb.ToString());
+            // TODO: do some stuff in between to see if correlations are being passed on
+
+            // Stop Operation
+            _telemClient.StopOperation(op);
 
             return Ok();
         }
@@ -156,7 +177,7 @@ namespace eg_webhook_api.Controllers
                 var version = details.SpecVersion;
                 if (!string.IsNullOrEmpty(version)) {
                     cloudEvent=details;
-                    WriteAppInsightsDependencyFromCloudEventSource(details.TraceParent, details.TraceState);
+                    // WriteAppInsightsDependencyFromCloudEventSource(details.TraceParent, details.TraceState);
                     return true;
                 }
             }

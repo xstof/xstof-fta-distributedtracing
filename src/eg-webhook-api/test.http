@@ -16,7 +16,7 @@ aeg-subscription-name: "test-eg-sub"
 }
 
 
-# test Cloud event through EG - 
+### test Cloud event through EG - 
 # note this requires a specific EG topic & subscription which require adding a AZ CLI extension 
 #  addition the handshake is different, exchange of info (via headers) using the OPTIONS endpoint: 
 # REF https://github.com/cloudevents/spec/blob/v1.0/http-webhook.md#4-abuse-protection
@@ -25,6 +25,7 @@ aeg-subscription-name: "test-eg-sub"
 # Endpoint and Key from
 #    az eventgrid topic key list --name $topicName -g $RG --query "key1" --output tsv 
 #    az eventgrid topic show --name $topicName -g $RG --query "endpoint" --output tsv
+
 
 POST https://begim-egtopic-cs.westeurope-1.eventgrid.azure.net/api/events
 Content-Type: application/cloudevents+json
@@ -42,13 +43,13 @@ aeg-sas-key: 7dCVcy0te2hoXEb4lAc2UbUhEVL6RKgQPVqzEdDFqTA=
     "data" : { "message": "hello world"}
 }
 
-#test local
+### test local
 GET http://localhost:5000/api/egwebhook
 
-# test published
+### test published
 GET https://begim-egsubscriber-webapp.azurewebsites.net/api/egwebhook
 
-# cloud event test debug
+### cloud event test debug
 
 POST http://localhost:5000/api/egwebhook
 Content-Type: application/cloudevents+json
@@ -72,7 +73,7 @@ aeg-subscription-name: FUNCAPPAEGSUB
 
 
 
-# validation handshake, eventgrid event, test debug
+### validation handshake, eventgrid event, test debug
 
 POST http://localhost:5000/api/egwebhook
 aeg-data-version: 1

@@ -22,7 +22,6 @@ namespace FTA.AICorrelation
 
         private readonly HttpClient _httpClient;
         private readonly string _logicAppAUrl;
-
         private readonly string _functionAppBUrl;
         private readonly string _httpBinHost;
         private readonly string _httpBinUrl;

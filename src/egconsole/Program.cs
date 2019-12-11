@@ -21,16 +21,21 @@ namespace egconsole
             var module = new DependencyTrackingTelemetryModule();
             module.ExcludeComponentCorrelationHttpHeadersOnDomains.Add("core.windows.net");
             module.Initialize(config);
-            // move this to config
-            config.InstrumentationKey = "2361c76b-4fe7-4349-bda1-c3fe73b3cefd";
+
+            config.InstrumentationKey = "4deeb3cd-f582-414c-96a0-64d5eee2eccb";
+
             config.TelemetryInitializers.Add(new HttpDependenciesParsingTelemetryInitializer());
             var client = new TelemetryClient(config);
 
+            // start req operation
+            var reqOp = client.StartOperation<RequestTelemetry>("ConsoleStart");
+            var operationId = reqOp.Telemetry.Id.Replace("|", "").Split('.')[0];
+            var requestId = reqOp.Telemetry.Id.Replace("|", "").Split('.')[1];
+
             var submissionId = Guid.NewGuid().ToString();
-            var requestActivity = new Activity("Console App Start");
-            requestActivity.Start();
-            requestActivity.AddBaggage("MySubmissionId", submissionId);
-            var requestOperation = client.StartOperation<RequestTelemetry>(requestActivity);
+            
+            // start dep operation
+            var dependencyOperation = client.StartOperation<DependencyTelemetry>($"EventGridDependency", operationId, requestId );
 
             using (var httpClient = new HttpClient())
             {
@@ -43,25 +48,29 @@ namespace egconsole
                     Time = DateTime.UtcNow.ToString(),
                     DataContentType = "application/json",
                     Data=null,
-                    TraceParent = requestActivity.RootId,
+                    TraceParent = Activity.Current.Id,   // <= check this out :-)
                     TraceState=$"MySubmissionId={submissionId}"
                 };
-                // this need to go in config
-                var httpRequest = new HttpRequestMessage(HttpMethod.Post,"https://begim-egtopic-cs.westeurope-1.eventgrid.azure.net/api/events");
+
+                var httpRequest = new HttpRequestMessage(HttpMethod.Post,"https://aicorr4-egtopic.westeurope-1.eventgrid.azure.net/api/events");
                 httpRequest.Content = new StringContent(JsonSerializer.Serialize(cloudEvent));
                 //httpRequest.Content.Headers.Add("Content-Type","application/cloudevents+json");
                 httpRequest.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/cloudevents+json");
-                // this needs to go into config
-                httpRequest.Headers.Add("aeg-sas-key","7dCVcy0te2hoXEb4lAc2UbUhEVL6RKgQPVqzEdDFqTA=");
+                // obtain the key for your AEG deployment
+                httpRequest.Headers.Add("aeg-sas-key","ot+5ematcxjQq3zn7MXOk14jznUJ5auWUPlUWL2Z4EQ=");
+
                 var result =await httpClient.SendAsync(httpRequest);
+
+                //stop dep operation
+                client.StopOperation(dependencyOperation);
+
+                // stop req operation
+                client.StopOperation(reqOp);
 
                 Console.WriteLine($"Console App Closes EG publish {result.StatusCode}");
                 client.TrackTrace($"Console App Closes EG publish {result.StatusCode}");
             }
-
-
-
-            client.StopOperation(requestOperation);
+            
             client.Flush();
  
             Console.WriteLine("Event Submitted!");
