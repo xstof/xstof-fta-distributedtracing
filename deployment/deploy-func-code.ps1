@@ -98,6 +98,9 @@ if ( $checkExistingSub.name -eq $egsubname ) {
     az eventgrid event-subscription create --name $egsubname --source-resource-id "/subscriptions/$SubId/resourceGroups/$RG/providers/Microsoft.EventGrid/topics/$topicName" --endpoint $endpoint  --event-delivery-schema cloudeventschemav1_0
 }
 
-## for testing using VS Code .http the following are required to post an event
-##    az eventgrid topic key list --name $topicName -g $RG --query "key1" --output tsv 
-##    az eventgrid topic show --name $topicName -g $RG --query "endpoint" --output tsv
+# write config for console app
+# e.g. {   "aegTopicUrl": "https://begim-egtopic-cs.westeurope-1.eventgrid.azure.net/api/events",   "aegTopicKey":"7dCVcy0te2hoXEb4lAc2UbUhEVL6RKgQPVqzEdDFqTA=" }
+$key= az eventgrid topic key list --name $topicName -g $RG --query "key1" --output tsv 
+$endpoint=    az eventgrid topic show --name $topicName -g $RG --query "endpoint" --output tsv
+$json="{ ""aegTopicUrl"": ""$endpoint"", ""aegTopicKey"": ""$key"" }"
+$json | Out-File -FilePath ../src/egconsole/appsettings.json -Force

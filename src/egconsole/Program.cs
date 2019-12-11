@@ -8,15 +8,69 @@ using System.Threading.Tasks;
 using eg_webhook_api;
 using System.Text.Json;
 using Microsoft.ApplicationInsights.DependencyCollector;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using System.Threading;
 
 namespace egconsole
 {
-    class Program
-    {
-        static async Task Main(string[] args)
-        {
-// use the config service?
+    class Program : IHostedService{
 
+        
+    public static async Task Main(string[] args)
+    {
+        await CreateHostBuilder(args).RunConsoleAsync();
+    }
+
+
+    private readonly IConfiguration _config;
+    private TelemetryClient _telemClient;
+
+    public Program (IConfiguration config){
+        _config = config;
+    }
+
+      public static IHostBuilder CreateHostBuilder(string[] args) =>
+        Host.CreateDefaultBuilder(args)
+            .ConfigureServices((hostContext, services) =>
+            {
+               services.AddHostedService<Program>();
+            })
+            .ConfigureAppConfiguration((hostingContext, config) => {
+                config.AddJsonFile("appsettings.json", optional: true);
+
+
+            });
+
+    public Task StartAsync(CancellationToken cancellationToken)
+    {
+        var aegTopicUrl = _config.GetValue<string>("aegTopicUrl");
+        var aegTopicKey = _config.GetValue<string>("aegTopicKey");
+
+        if ( string.IsNullOrEmpty(aegTopicUrl) || string.IsNullOrEmpty(aegTopicUrl)){
+            throw new Exception("The powershell to deploy the function code should have setup this console app appsettings file");
+        }
+
+        // this could be handled by DI - doing it this way would be for a console app run outside of IHostedService
+        var config = GetAppInsightsConfig();
+        _telemClient = new TelemetryClient(config);
+
+        RunConsoleApp(aegTopicUrl, aegTopicKey);
+
+        return Task.CompletedTask;
+    }
+
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
+                  
+        _telemClient.Flush();
+        Console.WriteLine("AI Flushed, Closing");
+        return Task.CompletedTask;
+    }
+
+
+        private TelemetryConfiguration GetAppInsightsConfig(){
             var config = TelemetryConfiguration.CreateDefault();
             var module = new DependencyTrackingTelemetryModule();
             module.ExcludeComponentCorrelationHttpHeadersOnDomains.Add("core.windows.net");
@@ -25,17 +79,24 @@ namespace egconsole
             config.InstrumentationKey = "4deeb3cd-f582-414c-96a0-64d5eee2eccb";
 
             config.TelemetryInitializers.Add(new HttpDependenciesParsingTelemetryInitializer());
-            var client = new TelemetryClient(config);
+
+            return config;
+        }
+
+        private async Task RunConsoleApp(string aegTopicUrl, string aegTopicKey)
+        {
+
+
 
             // start req operation
-            var reqOp = client.StartOperation<RequestTelemetry>("ConsoleStart");
+            var reqOp = _telemClient.StartOperation<RequestTelemetry>("ConsoleStart");
             var operationId = reqOp.Telemetry.Id.Replace("|", "").Split('.')[0];
             var requestId = reqOp.Telemetry.Id.Replace("|", "").Split('.')[1];
 
             var submissionId = Guid.NewGuid().ToString();
             
             // start dep operation
-            var dependencyOperation = client.StartOperation<DependencyTelemetry>($"EventGridDependency", operationId, requestId );
+            var dependencyOperation = _telemClient.StartOperation<DependencyTelemetry>($"EventGridDependency", operationId, requestId );
 
             using (var httpClient = new HttpClient())
             {
@@ -52,29 +113,27 @@ namespace egconsole
                     TraceState=$"MySubmissionId={submissionId}"
                 };
 
-                var httpRequest = new HttpRequestMessage(HttpMethod.Post,"https://aicorr4-egtopic.westeurope-1.eventgrid.azure.net/api/events");
+                var httpRequest = new HttpRequestMessage(HttpMethod.Post,aegTopicUrl);
                 httpRequest.Content = new StringContent(JsonSerializer.Serialize(cloudEvent));
                 //httpRequest.Content.Headers.Add("Content-Type","application/cloudevents+json");
                 httpRequest.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/cloudevents+json");
                 // obtain the key for your AEG deployment
-                httpRequest.Headers.Add("aeg-sas-key","ot+5ematcxjQq3zn7MXOk14jznUJ5auWUPlUWL2Z4EQ=");
+                httpRequest.Headers.Add("aeg-sas-key",aegTopicKey);
 
                 var result =await httpClient.SendAsync(httpRequest);
 
                 //stop dep operation
-                client.StopOperation(dependencyOperation);
+                _telemClient.StopOperation(dependencyOperation);
 
                 // stop req operation
-                client.StopOperation(reqOp);
+                _telemClient.StopOperation(reqOp);
 
-                Console.WriteLine($"Console App Closes EG publish {result.StatusCode}");
-                client.TrackTrace($"Console App Closes EG publish {result.StatusCode}");
+                _telemClient.TrackTrace($"Console App Closes EG publish {result.StatusCode}");
             }
-            
-            client.Flush();
+  
  
-            Console.WriteLine("Event Submitted!");
-            Console.ReadLine();
+            Console.WriteLine("Event Submitted! Use CTRL+C to exit");
+  
         }
     }
 }

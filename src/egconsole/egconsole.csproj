@@ -9,6 +9,7 @@
     <PackageReference Include="Microsoft.ApplicationInsights.DependencyCollector" Version="2.11.2" />
     <PackageReference Include="Microsoft.ApplicationInsights.WindowsServer" Version="2.11.2" />
     <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.8.2" />
+    <PackageReference Include="Microsoft.Extensions.hosting" Version="3.1.0" />
   </ItemGroup>
 
 </Project>
