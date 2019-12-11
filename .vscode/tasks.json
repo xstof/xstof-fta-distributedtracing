@@ -81,6 +81,35 @@
             "command": "host start",
             "isBackground": true,
             "problemMatcher": "$func-watch"
-        }
+        },
+        {
+            "label": "clean-eg-console",
+            "command": "dotnet",
+            "args": [
+                "clean",
+                "${workspaceFolder}/src/egconsole/egconsole.csproj",
+                "/property:GenerateFullPaths=true",
+                "/consoleloggerparameters:NoSummary"
+            ],
+            "type": "process",
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "build-eg-console",
+            "command": "dotnet",
+            "args": [
+                "build",
+                "${workspaceFolder}/src/egconsole/egconsole.csproj",
+                "/property:GenerateFullPaths=true",
+                "/consoleloggerparameters:NoSummary"
+            ],
+            "type": "process",
+            "dependsOn": "clean-eg-console",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": "$msCompile"
+        },
     ]
 }

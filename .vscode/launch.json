@@ -5,10 +5,10 @@
             "name": "Launch eventgrid console app",
             "type": "coreclr",
             "request": "launch",
-            "preLaunchTask": "build",
-            "program": "${workspaceFolder}/egconsole/bin/Debug/netcoreapp3.0/egconsole.dll",
+            "preLaunchTask": "build-eg-console",
+            "program": "${workspaceFolder}/src/egconsole/bin/Debug/netcoreapp3.0/egconsole.dll",
             "args": [],
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/src/egconsole",
             "stopAtEntry": false,
             "console": "internalConsole"
         },
