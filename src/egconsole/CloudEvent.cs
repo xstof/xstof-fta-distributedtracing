@@ -4,27 +4,8 @@ using System;
 
 namespace eg_webhook_api{
 
-    public class GridEvent<T> where T: class
-    {
-        [JsonPropertyName("id")]
-        public string Id { get; set;}
 
-        [JsonPropertyName("eventType")]
-        public string EventType { get; set;}
-
-        [JsonPropertyName("subject")]
-        public string Subject {get; set;}
-
-        [JsonPropertyName("eventTime")]
-        public DateTime EventTime { get; set; } 
-
-        [JsonPropertyName("data")]
-        public T Data { get; set; } 
-        [JsonPropertyName("topic")]
-        public string Topic { get; set; }
-    }
-
-    public class CloudEvent<T>  where T : class
+  public class CloudEvent<T> where T : class
     {
 
         // Spec https://github.com/cloudevents/spec/blob/v1.0/spec.md
@@ -53,6 +34,7 @@ namespace eg_webhook_api{
         [JsonPropertyName("datacontenttype")]
         public string DataContentType { get; set; }
 
+
         // trace extension properties https://github.com/cloudevents/spec/blob/v1.0/extensions/distributed-tracing.md
 
         [JsonPropertyName("traceparent")]
@@ -60,6 +42,6 @@ namespace eg_webhook_api{
 
         [JsonPropertyName("tracestate")]
         public string TraceState { get; set; }
-    }
 
+    }
 }

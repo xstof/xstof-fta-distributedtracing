@@ -24,6 +24,7 @@ namespace eg_webhook_api {
         public void ConfigureServices (IServiceCollection services) {
             services.AddControllers ();
             services.AddApplicationInsightsTelemetry ();
+            services.AddHttpClient();
            
         }
 
@@ -43,11 +44,6 @@ namespace eg_webhook_api {
                 endpoints.MapControllers ();
             });
 
-
-
-                // Call the next delegate/middleware in the pipeline
-                await next ();
-            });
 
         }
     }
