@@ -87,18 +87,24 @@ namespace egconsole
         private async Task RunConsoleApp(string aegTopicUrl, string aegTopicKey)
         {
 
-
-
             // start req operation
             var reqOp = _telemClient.StartOperation<RequestTelemetry>("ConsoleStart");
             var operationId = reqOp.Telemetry.Id.Replace("|", "").Split('.')[0];
             var requestId = reqOp.Telemetry.Id.Replace("|", "").Split('.')[1];
-
-            var submissionId = Guid.NewGuid().ToString();
             
             // start dep operation
             var dependencyOperation = _telemClient.StartOperation<DependencyTelemetry>($"EventGridDependency", operationId, requestId );
 
+            // write out custom activity tags/baggage
+            var currActivity = Activity.Current;
+            
+            var submissionId = Guid.NewGuid().ToString();
+            Console.WriteLine($"Submission Id is {submissionId}");
+
+            currActivity.AddTag("MyCustomCorrId", submissionId);
+            currActivity.AddBaggage("MyCustomCorrId", submissionId);
+
+            // raise event
             using (var httpClient = new HttpClient())
             {
       
@@ -111,7 +117,7 @@ namespace egconsole
                     DataContentType = "application/json",
                     Data=null,
                     TraceParent = Activity.Current.Id,   // <= check this out :-)
-                    TraceState=$"MySubmissionId={submissionId}"
+                    TraceState=$"MyCustomCorrId={submissionId}"
                 };
 
 
