@@ -5,6 +5,8 @@
 local.settings.json
 
 # User-specific files
+# ignore the app settings file as we want to dynamically create this with context specific values via the deploy script 
+appsettings.json
 *.suo
 *.user
 *.userosscache

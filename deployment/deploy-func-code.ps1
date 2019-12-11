@@ -42,7 +42,6 @@ az functionapp deployment source config-zip  -g $RG -n $funcBname --src "Functio
 write-host "published function app B source" -ForegroundColor Green
 
 # Web App
-$webappname="$ResourcesPrefix-egsubscriber-webapp"
 dotnet publish "..\src\eg-webhook-api\eg-webhook-api.csproj"
 $compress = @{
   Path= "..\src\eg-webhook-api\bin\Debug\netcoreapp3.0\publish\*"
@@ -50,7 +49,7 @@ $compress = @{
   DestinationPath = "eg-webhook-api.zip"
 }
 Compress-Archive @compress -Force
-$funcBname = $ResourcesPrefix + "-fn-b"
+$webappname="$ResourcesPrefix-egsubscriber-webapp"
 az webapp deployment source config-zip  -g $RG -n $webappname --src "eg-webhook-api.zip"
 
 write-host "published web app source" -ForegroundColor Green
@@ -98,6 +97,11 @@ if ( $checkExistingSub.name -eq $egsubname ) {
     az eventgrid event-subscription create --name $egsubname --source-resource-id "/subscriptions/$SubId/resourceGroups/$RG/providers/Microsoft.EventGrid/topics/$topicName" --endpoint $endpoint  --event-delivery-schema cloudeventschemav1_0
 }
 
-## for testing using VS Code .http the following are required to post an event
-##    az eventgrid topic key list --name $topicName -g $RG --query "key1" --output tsv 
-##    az eventgrid topic show --name $topicName -g $RG --query "endpoint" --output tsv
+# write config for console app
+# e.g. {   "aegTopicUrl": "https://begim-egtopic-cs.westeurope-1.eventgrid.azure.net/api/events",   "aegTopicKey":"7dCVcy0te2hoXEb4lAc2UbUhEVL6RKgQPVqzEdDFqTA=" }
+$key= az eventgrid topic key list --name $topicName -g $RG --query "key1" --output tsv 
+$endpoint=    az eventgrid topic show --name $topicName -g $RG --query "endpoint" --output tsv
+az extension add --name application-insights
+$iKey = (az monitor app-insights component show --app "$ResourcesPrefix-egsubscriber-webapp-ai" -g $RG | ConvertFrom-Json).instrumentationKey
+$json="{ ""aegTopicUrl"": ""$endpoint"", ""aegTopicKey"": ""$key"" , ""iKey"": ""$iKey""}"
+$json | Out-File -FilePath ../src/egconsole/appsettings.json -Force
