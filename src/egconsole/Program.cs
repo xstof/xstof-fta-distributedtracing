@@ -15,10 +15,13 @@ namespace egconsole
     {
         static async Task Main(string[] args)
         {
+// use the config service?
+
             var config = TelemetryConfiguration.CreateDefault();
             var module = new DependencyTrackingTelemetryModule();
             module.ExcludeComponentCorrelationHttpHeadersOnDomains.Add("core.windows.net");
             module.Initialize(config);
+            // move this to config
             config.InstrumentationKey = "2361c76b-4fe7-4349-bda1-c3fe73b3cefd";
             config.TelemetryInitializers.Add(new HttpDependenciesParsingTelemetryInitializer());
             var client = new TelemetryClient(config);
@@ -43,11 +46,12 @@ namespace egconsole
                     TraceParent = requestActivity.RootId,
                     TraceState=$"MySubmissionId={submissionId}"
                 };
+                // this need to go in config
                 var httpRequest = new HttpRequestMessage(HttpMethod.Post,"https://begim-egtopic-cs.westeurope-1.eventgrid.azure.net/api/events");
                 httpRequest.Content = new StringContent(JsonSerializer.Serialize(cloudEvent));
                 //httpRequest.Content.Headers.Add("Content-Type","application/cloudevents+json");
                 httpRequest.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/cloudevents+json");
-                // obtain the key for your AEG deployment
+                // this needs to go into config
                 httpRequest.Headers.Add("aeg-sas-key","7dCVcy0te2hoXEb4lAc2UbUhEVL6RKgQPVqzEdDFqTA=");
                 var result =await httpClient.SendAsync(httpRequest);
 
