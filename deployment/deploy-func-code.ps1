@@ -42,7 +42,7 @@ az functionapp deployment source config-zip  -g $RG -n $funcBname --src "Functio
 write-host "published function app B source" -ForegroundColor Green
 
 # Web App
-$webappname="begim-egsubscriber-webapp"
+$webappname="$ResourcesPrefix-egsubscriber-webapp"
 dotnet publish "..\src\eg-webhook-api\eg-webhook-api.csproj"
 $compress = @{
   Path= "..\src\eg-webhook-api\bin\Debug\netcoreapp3.0\publish\*"
