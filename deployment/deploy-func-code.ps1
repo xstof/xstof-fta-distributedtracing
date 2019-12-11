@@ -101,5 +101,7 @@ if ( $checkExistingSub.name -eq $egsubname ) {
 # e.g. {   "aegTopicUrl": "https://begim-egtopic-cs.westeurope-1.eventgrid.azure.net/api/events",   "aegTopicKey":"7dCVcy0te2hoXEb4lAc2UbUhEVL6RKgQPVqzEdDFqTA=" }
 $key= az eventgrid topic key list --name $topicName -g $RG --query "key1" --output tsv 
 $endpoint=    az eventgrid topic show --name $topicName -g $RG --query "endpoint" --output tsv
-$json="{ ""aegTopicUrl"": ""$endpoint"", ""aegTopicKey"": ""$key"" }"
+az extension add --name application-insights
+$iKey = (az monitor app-insights component show --app "$ResourcesPrefix-egsubscriber-webapp-ai" -g $RG | ConvertFrom-Json).instrumentationKey
+$json="{ ""aegTopicUrl"": ""$endpoint"", ""aegTopicKey"": ""$key"" , ""iKey"": ""$iKey""}"
 $json | Out-File -FilePath ../src/egconsole/appsettings.json -Force

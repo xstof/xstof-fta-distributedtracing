@@ -47,13 +47,14 @@ namespace egconsole
     {
         var aegTopicUrl = _config.GetValue<string>("aegTopicUrl");
         var aegTopicKey = _config.GetValue<string>("aegTopicKey");
+        var iKey = _config.GetValue<string>("iKey");
 
         if ( string.IsNullOrEmpty(aegTopicUrl) || string.IsNullOrEmpty(aegTopicUrl)){
             throw new Exception("The powershell to deploy the function code should have setup this console app appsettings file");
         }
 
         // this could be handled by DI - doing it this way would be for a console app run outside of IHostedService
-        var config = GetAppInsightsConfig();
+        var config = GetAppInsightsConfig(iKey);
         _telemClient = new TelemetryClient(config);
 
         RunConsoleApp(aegTopicUrl, aegTopicKey);
@@ -70,13 +71,13 @@ namespace egconsole
     }
 
 
-        private TelemetryConfiguration GetAppInsightsConfig(){
+        private TelemetryConfiguration GetAppInsightsConfig(string iKey){
             var config = TelemetryConfiguration.CreateDefault();
             var module = new DependencyTrackingTelemetryModule();
             module.ExcludeComponentCorrelationHttpHeadersOnDomains.Add("core.windows.net");
             module.Initialize(config);
 
-            config.InstrumentationKey = "4deeb3cd-f582-414c-96a0-64d5eee2eccb";
+            config.InstrumentationKey = iKey;
 
             config.TelemetryInitializers.Add(new HttpDependenciesParsingTelemetryInitializer());
 
