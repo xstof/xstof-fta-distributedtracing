@@ -219,6 +219,10 @@
             "name": "nested-logicapp-a",
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2016-09-01",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/connections', variables('serviceBusConnection'))]",
+                "nested-functions-b"
+            ],
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
@@ -239,10 +243,7 @@
                         "value": "[variables('serviceBusQueueName')]"
                     }
                 }
-            },
-            "dependsOn": [
-                "nested-functions-b"
-            ]
+            }
         },
         {
             "name": "nested-functions-a",
