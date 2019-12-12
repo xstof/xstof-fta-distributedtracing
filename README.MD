@@ -262,9 +262,7 @@ Note how the call to `Activity.AddTag(..)` did _not_ result in anything being re
 | ------------             | -----------------------------------                                 |
 | Correlation-Context      | MySubmissionIdThroughBagage=bec20faa-9fa1-4dfc-a081-9b32a52dbdac    |
 
-This mechanism works: 
-- despite that the Functions ServiceBus binding does not call into App Insights directly (it just uses the Service Bus SDK)
-- despite the fact that the Service Bus SDK does not know anything about our application context
+This mechanism works because the information in the headers is flowed through service bus and collected by the receiver: The Functions ServiceBus binding does not call into App Insights directly (it just uses the Service Bus SDK). The Service Bus SDK does not know anything about our application context.
 
 On the side of App Insights, for the request telemetry item nothing will have changed but the following is what we see for the dependency telemetry item:
 
@@ -278,11 +276,13 @@ What if FunctionB now picks up this message from the queue?  This mechanism will
 | ------------                              | -----------------------------------     |
 | (custom) MySubmissionIdThroughBagage      | bec20faa-9fa1-4dfc-a081-9b32a52dbdac    |
 
-Even beyond this... if FunctionB does an outbound HTTP calls, that custom metadata will also travel in the headers of such outbound call.
+Even beyond this... if FunctionB does an outbound HTTP calls, that custom metadata will also travel in the headers of such outbound call. "Baggage" because the data travels!
 
 > **Note**: the App Insights treeview and app map will still _not_ show a consolidated view out of the box when _just_ doing Fn A -> SvcBus -> Fn B.  It has no idea which workspaces to link up.  However, as soon as one does an HTTP call from Fn A to Fn B, the **appId** of both workspaces are exchanged and App Insights will start lighting up the consolidated experience!  Like this:
 >
 > ![fn-to-svcbus-to-fn-to-http](./images/fn-to-svcbus-to-fn-to-http.png)
+>
+> This gap will be mitigated in the near to medium term future.
 
 ### Using Kusto to correlate items with a custom correlation ID
 
@@ -290,11 +290,15 @@ You could write a Kusto query as below to find telemetry with a custom correlati
 
 ~~~kusto
 (requests | union dependencies | union pageViews)
-| extend MyCustomCorrId = tostring(customDimensions.MyCustomCorrId) 
+| extend MyCustomCorrId = tostring(customDimensions.MyCustomCorrId)
 | where  MyCustomCorrId == "7d767f42-3e80-4e4e-9d40-44edb59af6f3"
 ~~~
 
-To do the same across workspaces, [see the documentation for this](https://docs.microsoft.com/en-us/azure/azure-monitor/log-query/cross-workspace-query#identifying-an-application).  This could look something like:
+The "app()" keyword allows you to union and join data across workspaces, [see the documentation for this](https://docs.microsoft.com/en-us/azure/azure-monitor/log-query/cross-workspace-query#identifying-an-application).  
+
+> Note The LA workspace behind App Insights has not historically been exactly the same as the run-of-the-mill LA workspace you create. See [here](https://docs.microsoft.com/en-us/azure/azure-monitor/log-query/unify-app-resource-data#application-insights-and-log-analytics-workspace-schema-differences) for more info.
+
+This could look something like:
 
 ~~~kusto
 let allApps = union app('aicorr-fn-appinsights-a').requests, app('aicorr-fn-appinsights-b').requests,

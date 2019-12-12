@@ -43,13 +43,15 @@ $azsubscription= az account show | ConvertFrom-Json
 $SubId = $azsubscription.Id
 $workbookpath = ".\nestedTemplates\workbook.json"
 $modifiedworkbookpath = ".\nestedTemplates\workbook-tmp.json"
-(Get-Content -path $workbookpath -Raw) -replace `
-  "/subscriptions/651dc44c-5d8e-48da-8cd3-cd79224ac290/resourceGroups/xstof-aicorr3/providers" `
-  ,"/subscriptions/$SubId/resourceGroups/$RG/providers" `
-  | Set-Content -Path $modifiedworkbookpath
+Copy-Item -Path $workbookpath -Destination $modifiedworkbookpath -Force
 
+(Get-Content -path $modifiedworkbookpath -Raw) -replace `
+"/subscriptions/651dc44c-5d8e-48da-8cd3-cd79224ac290" ,"/subscriptions/$SubId" | Set-Content -Path $modifiedworkbookpath
 
-(Get-Content -path $workbookpath -Raw) -replace `
+  (Get-Content -path $modifiedworkbookpath -Raw) -replace `
+  "resourceGroups/xstof-aicorr3" ,"resourceGroups/$RG" | Set-Content -Path $modifiedworkbookpath
+
+(Get-Content -path $modifiedworkbookpath -Raw) -replace `
   "aicorr3" ,$ResourcesPrefix | Set-Content -Path $modifiedworkbookpath
 
 # upload nested templates
