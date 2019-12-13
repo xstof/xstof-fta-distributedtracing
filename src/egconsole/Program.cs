@@ -86,23 +86,32 @@ namespace egconsole
 
         private async Task RunConsoleApp(string aegTopicUrl, string aegTopicKey)
         {
+            // start root activity and record on it the custom activity tags/baggage
+            var rootActivity = new Activity("Console Root");
+
+            var submissionId = Guid.NewGuid().ToString();
+            Console.WriteLine($"Submission Id is {submissionId}");
+
+            rootActivity.AddTag("MyCustomCorrId", submissionId);
+            rootActivity.AddBaggage("MyCustomCorrId", submissionId);
+            //rootActivity.Start();
 
             // start req operation
-            var reqOp = _telemClient.StartOperation<RequestTelemetry>("ConsoleStart");
+            var reqOp = _telemClient.StartOperation<RequestTelemetry>(rootActivity);
             var operationId = reqOp.Telemetry.Id.Replace("|", "").Split('.')[0];
             var requestId = reqOp.Telemetry.Id.Replace("|", "").Split('.')[1];
             
             // start dep operation
-            var dependencyOperation = _telemClient.StartOperation<DependencyTelemetry>($"EventGridDependency", operationId, requestId );
+            // var dependencyOperation = _telemClient.StartOperation<DependencyTelemetry>($"EventGridDependency", operationId, requestId );
 
-            // write out custom activity tags/baggage
-            var currActivity = Activity.Current;
+            // // write out custom activity tags/baggage
+            // var currActivity = Activity.Current;
             
-            var submissionId = Guid.NewGuid().ToString();
-            Console.WriteLine($"Submission Id is {submissionId}");
+            // var submissionId = Guid.NewGuid().ToString();
+            // Console.WriteLine($"Submission Id is {submissionId}");
 
-            currActivity.AddTag("MyCustomCorrId", submissionId);
-            currActivity.AddBaggage("MyCustomCorrId", submissionId);
+            // currActivity.AddTag("MyCustomCorrId", submissionId);
+            // currActivity.AddBaggage("MyCustomCorrId", submissionId);
 
             // raise event
             using (var httpClient = new HttpClient())
@@ -113,7 +122,7 @@ namespace egconsole
                     Type="com.example.someevent",
                     Source="MyContent",
                     Id ="A234-1234-1234",
-                    Time = DateTime.UtcNow.ToString(),
+                    Time = DateTime.UtcNow.ToString("o"),
                     DataContentType = "application/json",
                     Data=null,
                     TraceParent = Activity.Current.Id,   // <= check this out :-)
@@ -133,15 +142,17 @@ namespace egconsole
                 var result =await httpClient.SendAsync(httpRequest);
 
                 //stop dep operation
-                _telemClient.StopOperation(dependencyOperation);
+                //_telemClient.StopOperation(dependencyOperation);
 
-                // stop req operation
-                _telemClient.StopOperation(reqOp);
-
-                _telemClient.TrackTrace($"Console App Closes EG publish {result.StatusCode}");
+                 _telemClient.TrackTrace($"Console App Closes EG publish {result.StatusCode}");
             }
   
- 
+            // stop req operation
+            _telemClient.StopOperation(reqOp);
+           _telemClient.Flush();
+            
+            //rootActivity.Stop();
+
             Console.WriteLine("Event Submitted! Use CTRL+C to exit");
   
         }
