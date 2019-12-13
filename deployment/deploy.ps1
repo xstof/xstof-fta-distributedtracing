@@ -45,14 +45,14 @@ $workbookpath = ".\nestedTemplates\workbook.json"
 $modifiedworkbookpath = ".\nestedTemplates\workbook-tmp.json"
 Copy-Item -Path $workbookpath -Destination $modifiedworkbookpath -Force
 
-(Get-Content -path $modifiedworkbookpath -Raw) -replace `
-"/subscriptions/651dc44c-5d8e-48da-8cd3-cd79224ac290" ,"/subscriptions/$SubId" | Set-Content -Path $modifiedworkbookpath
+#(Get-Content -path $modifiedworkbookpath -Raw) -replace `
+#"/subscriptions/651dc44c-5d8e-48da-8cd3-cd79224ac290" ,"/subscriptions/$SubId" | Set-Content -Path $modifiedworkbookpath
 
-  (Get-Content -path $modifiedworkbookpath -Raw) -replace `
-  "(resourceGroups)(\/+)(\w+)-(\w+)" ,"resourceGroups/$RG" | Set-Content -Path $modifiedworkbookpath
+#(Get-Content -path $modifiedworkbookpath -Raw) -replace `
+#"(resourceGroups)(\/+)(\w+)-(\w+)" ,"resourceGroups/$RG" | Set-Content -Path $modifiedworkbookpath
 
-  (Get-Content -path $modifiedworkbookpath -Raw) -replace `
-  "(\/+)(\w+)(-fn-appinsights)" ,"/$resourcesprefix-fn-appinsights" | Set-Content -Path $modifiedworkbookpath
+# (Get-Content -path $modifiedworkbookpath -Raw) -replace `
+# "(\/+)(\w+)(-fn-appinsights)" ,"/$resourcesprefix-fn-appinsights" | Set-Content -Path $modifiedworkbookpath
   
 
 # upload nested templates
