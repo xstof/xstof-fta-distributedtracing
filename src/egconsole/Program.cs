@@ -98,8 +98,8 @@ namespace egconsole
 
             // start req operation
             var reqOp = _telemClient.StartOperation<RequestTelemetry>(rootActivity);
-            var operationId = reqOp.Telemetry.Id.Replace("|", "").Split('.')[0];
-            var requestId = reqOp.Telemetry.Id.Replace("|", "").Split('.')[1];
+            //var operationId = reqOp.Telemetry.Id.Replace("|", "").Split('.')[0];
+            //var requestId = reqOp.Telemetry.Id.Replace("|", "").Split('.')[1];
             
             // start dep operation
             // var dependencyOperation = _telemClient.StartOperation<DependencyTelemetry>($"EventGridDependency", operationId, requestId );
@@ -128,7 +128,7 @@ namespace egconsole
                     TraceParent = Activity.Current.Id,   // <= check this out :-)
                     TraceState=$"MyCustomCorrId={submissionId}"
                 };
-
+                Console.WriteLine(cloudEvent.TraceParent);
 
                 var httpRequest = new HttpRequestMessage(HttpMethod.Post,aegTopicUrl);
 

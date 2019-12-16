@@ -203,7 +203,6 @@ namespace eg_webhook_api.Controllers
                 var version = details.SpecVersion;
                 if (!string.IsNullOrEmpty(version)) {
                     cloudEvent=details;
-                    // WriteAppInsightsDependencyFromCloudEventSource(details.TraceParent, details.TraceState);
                     return true;
                 }
             }
@@ -215,28 +214,6 @@ namespace eg_webhook_api.Controllers
             return false;
         }
 
-        private void WriteAppInsightsDependencyFromCloudEventSource(string traceParent, string traceState){
-            if ( !string.IsNullOrEmpty (traceParent)){
-                _logger.LogInformation($"traceparent={traceParent}");
-                // this wont get traced with the dependency
-                Activity.Current.AddTag("MyTag", "MyTagValue");
-                // this should make it to further calls
-                AddAnyActivityBaggage(Activity.Current, traceState);
-                // track the event as a dependency based on the subscription for the event
-                var aegSubDependency = new DependencyTelemetry();
-                aegSubDependency.Name = $"Triggered by AEG Subscription {AEGSubscriptionName}";
-                aegSubDependency.Id = traceParent;
-                _telemClient.TrackDependency(aegSubDependency);
-
-                // show headers
-                var pastebinurl=_config.GetValue<string>("PasteBinUrl", "");
-                if ( !string.IsNullOrEmpty(pastebinurl)){
-                    var httpClient = _httpClientFactory.CreateClient();
-                    httpClient.GetAsync(pastebinurl);
-                }
-            }
-
-        } 
 
         private void AddAnyActivityBaggage(Activity curActivity,string currentBaggage){
             if (string.IsNullOrWhiteSpace(currentBaggage)){

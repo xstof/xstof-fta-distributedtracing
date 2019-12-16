@@ -178,70 +178,62 @@ The Sample for Event Grid has the following components:
 > The ASP Net core App Event webhook used here is derived from this [Azure Event Viewer Sample](https://docs.microsoft.com/en-us/samples/azure-samples/azure-event-grid-viewer/azure-event-grid-viewer/).
 > A proxy with scripting could also be used.
 
-The console app begins by submitting a request telemetry item (this is a console app so there is no request pipeline for the AI SDK). The request telemetry item therefore represents the console app start.
-Within this operation we then start a dependency telemetry / operation which will represent the Event Grid topic submission. It is worth noting that because the console app is configured with App Insights and the http dependency module, and becuse the post to the Topic is Http, we'll get an additional dependency from the SDK - but the purpose of our explicit dependency is to obtain the correct context to write into the event.
+The console app begins by submitting a request telemetry item within an AI operation context (this is a console app so there is no request pipeline for the AI SDK). The request context is created with a new System Diagnostics Activity so we can more easily add explicit context.
 
-> In fact our dependency is created as a child operation of the request telemetry, we create our dependency passing in operation and request identifiers derived from the request operation context. 
-> Not only this but the http dependency generated will also be a child of our dependency - see screen snip below.
->
-> As with the functions we have the "submissionId" GUID which will represent context that we wish to "travel" with the related Telemetry.
+The request telemetry item therefore represents the console app start.
 
 ~~~cs
+// create root activity
+var rootActivity = new Activity("Console Root");
+// this value represents our context
+var submissionId = Guid.NewGuid().ToString();
+// we add our context for the request but also with the intention that it is propagated (baggage!)
+rootActivity.AddTag("MyCustomCorrId", submissionId);
+rootActivity.AddBaggage("MyCustomCorrId", submissionId);
+// request telem created with the activity as context
+var reqOp = _telemClient.StartOperation<RequestTelemetry>(rootActivity);
+~~~
 
-  // start req operation
-  var reqOp = _telemClient.StartOperation<RequestTelemetry>("ConsoleStart");
-  var operationId = reqOp.Telemetry.Id.Replace("|", "").Split('.')[0];
-  var requestId = reqOp.Telemetry.Id.Replace("|", "").Split('.')[1];
+Because the console app is configured with App Insights and the http dependency module, and because the post to the Topic is Http, we'll get a dependency (representing the event being sent to the topic) from the AI SDK auto-magically.
 
-  var submissionId = Guid.NewGuid().ToString();
-  
-  // start dep operation
-  var dependencyOperation = _telemClient.StartOperation<DependencyTelemetry>($"EventGridDependency", operationId, requestId );
+The context values are passed into the cloud event body using the correct schema extension fields.
 
-  using (var httpClient = new HttpClient())
-  {
+~~~cs
+  var cloudEvent = new CloudEvent<dynamic>(){
+      SpecVersion = "1.0",
+      Type="com.example.someevent",
+      Source="MyContent",
+      Id ="A234-1234-1234",
+      Time = DateTime.UtcNow.ToString("o"),
+      DataContentType = "application/json",
+      Data=null,
+      TraceParent = Activity.Current.Id,   // 00-1cf1ce214f4cc741877ddb1f73168c02-f6eda692ff18f64b-00
+      TraceState=$"MyCustomCorrId={submissionId}"
+  };
 
-      var cloudEvent = new CloudEvent<dynamic>(){
-          SpecVersion = "1.0",
-          Type="com.example.someevent",
-          Source="MyContent",
-          Id ="A234-1234-1234",
-          Time = DateTime.UtcNow.ToString(),
-          DataContentType = "application/json",
-          Data=null,
-          TraceParent = Activity.Current.Id,   //example "00-5c5031136bb4fc4ba327dca540e9e48c-455d7703d448dc42-00"
-          TraceState=$"MySubmissionId={submissionId}"
-      };
 ~~~
 
 As AEG does not yet natively support App Insights correlation we have to ensure the operation and baggage are transmitted in the event body using the cloud event schema extension properties that exist for this reason. You can see the "submission id" guid is mapped ot the "TraceState" (this can be a comma delimited list of key=values). You can also see that the "TraceParent" is set from the current activity. This in turn is set from the AI operations scope we've created (with the start operations calls).
 
-> Note the form of the "traceparent" payload (an example of which is in the comment). Ignoring the first and last part (which are flags) the first, longer value , is the operation id, the send the request id for the current activity.
+> Note the form of the "traceparent" payload (an example of which is in the code comment above). 
+> Ignoring the first and last part (which are flags) the first, longer value , is the operation id, the send the request id for the current activity.
 
 Here's the Telemetry for the Console App as traced in App Insights
 
 ![aeg-sender](./images/aeg-sender.JPG)
 
-Note the relationship - our dependency doesn't get set a "type" so appears as "other".
-The HTTP dependency (which was automatically created) is typed.
-Clicking through the dependencys you will notice the request id for the parent is the parent-id for the child.
-The last thing to note is the "HandleCloudEvent EG-CS-SUB" request telemetry.
+The automatic dependency, for writing the event to the topic is a sibling of the console app invocation (represented by the request) and the final item "HandleCloudEvent" is from the event being received from the subscription. This is written from the receiving application.
 
-Where does this request-telemetry come from? 
-This comes from the api we deployed which subscribes to the event we've just sent.
+It appears in the AI end to end experience in context of the console app for two reasons
+(1) Its created with the context we sent with the event
+(2) Both sender and subscriber apps report to the same AI resource
+
+Here's how the custom AI dependency was written, note this is from the event trace parent field as per the value shown above:
 
 ~~~cs
 var op = _telemClient.StartOperation<RequestTelemetry>($"HandleCloudEvent {AEGSubscriptionName}", details.TraceParent.Split('-')[1], details.TraceParent.Split('-')[2]);
 ~~~
 
-Note that we've de-serialized the event payload ("details" variable) and we're unpacking the value in the "traceparent" field set in the context app and using the operation id (the second value) and the request id (the third value) as the parent. This is what causes the "handlecloudevent...." telemetry in the screen snip above to be a child of the telemetry for the event submission.
-
-> Note: Today this only renders in the end-to-end view this way because both console app and subscriber app write to the same app insights resource. Also note the "duration" is incorrect. This is because we're not setting the operation start and stop correctly.
-> Today, using a single AI resource you should also be able to see a relationship between sender and subscriber apps on the App Map.
-
-![aeg-sender-appmap](./images/aeg-sender-appmap.JPG)
-
-The subscriber is the "-webapp" resource, the console app is marked with the red cross.
 
 ### << begim TO EDIT below this point >>
 
