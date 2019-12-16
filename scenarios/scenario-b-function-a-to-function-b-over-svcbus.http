@@ -1,0 +1,12 @@
+@hostnamea = begim-fn-a.azurewebsites.net
+## if needed declare host and port e.g. localhost:8080
+@hosta = {{hostnamea}}
+@contentType = application/json
+@protocol = https
+@submissionid = {{$guid}}
+
+http://localhost:5000
+
+### USING FUNCTION A PUT A MSG ON A QUEUE TO BE PICKED UP BY FUNCTION B
+@submissionid = {{$guid}}
+POST {{protocol}}://{{hosta}}/api/queue/{{submissionid}} HTTP/1.1

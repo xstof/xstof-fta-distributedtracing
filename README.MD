@@ -13,73 +13,75 @@ It does so by providing real working examples and associated instructions for a 
 
 ## Scenarios
 
-### **Scenario 1: App Insights and HTTP Calls**
+### **Scenario 1: Function A calling Function B over HTTP**
 
-Use either Function App A, or B with an HTTP invocation. The body of the function method then makes a GET call to [Request Bin](https://requestbin.com/) URL. Request Bin acts as a proxy and it's possible to observe through this the additional HTTP headers added for the purposes of correlation, by the App Insights SDK, to the outgoing HTTP call from the Azure function.
+Use either Function App A, or B with an HTTP invocation. The body of the function method then makes a GET call to an external url. 
 
-The interesting properties that appear as headers on the outbound HTTP call are:
+> In the correlation playground setup by the ARM template this external url is a Azure Container Instance hosting a version of [`anyproxy`](https://github.com/alibaba/anyproxy) which serves as a proxy returning a static HTTP 200 response while logging the request.  This allows us to observe the additional HTTP headers added for the purposes of correlation, by the App Insights SDK, to the outgoing HTTP call from the Azure function.
+> In order to observe the call being made towards anyproxy, find the ip address for the ACI instance (Example: `51.124.59.80`) and visit it on port `8002`, like this: `http://51.124.59.80:8002`.  
+> Any requests that have been made on port `8080` will have been logged and visible on this admin page.
+>
+> **WARNING: This is for demonstration / convenience purposes ONLY, in the context of this playground setup!  Do not use this in production.**
+
+The interesting properties that appear as headers on the outbound HTTP call from Function A to Function B are:
 
 | Header                   | Value                                                       | Comment                                          |
 | ------------             | -----------------------------------                         | ------------------------------------             |
 | **TraceParent**          | **00-2ba1dcbb920c0c489823e86ee57e557d-82c588a5d78c3f4a-00** | is the new W3C trace context                     |
 | **Request-Id**           | **\|2ba1dcbb920c0c489823e86ee57e557d.82c588a5d78c3f4a.**    | is the older "request-id" mechanism              |
-| **Request-Context**      | **appId=cid-v1:6b06625e-3d1f-4bb4-8b50-b22b20b5a6d6**       | represents the app id for AI A                   |
+| **Request-Context**      | **appId=cid-v1:6b06625e-3d1f-4bb4-8b50-b22b20b5a6d6**       | represents the app id for App Insights A         |
 | X-Request-Id             | c39043fc-5693-4ca6-ba3c-56cf059acbad                        | NOT important to the discussion - IGNORE THIS    |
 
 > Note: `X-Request-Id` is an older concept, originally intended to flow custom correlation id between client and server for HTTP calls.  It is not important to the discussion here.  Please ignore.
 >
-> An Application Id value is also returned in the response header request-context to a http function invocation
-> Because this value is obtained (non blocking) by the runtime the first few calls may not return it.
+> An Application Id value is also returned in the response header `Request-Context` to caller.  None of this is unique to Azure Functions.
+> Because this value is obtained (non blocking) by the runtime, note that the first few calls may not return it.
 > Ref https://github.com/microsoft/ApplicationInsights-dotnet-server/issues/504
 
-... and what we see on App Insights:
+... and what we see on App Insights is two telemetry items for Function A: one for the Request and one for the Dependency being called within the request:
 
-Request telemetry item:
+Callers Request telemetry item:
 
 | Property                 | Value                                                   |
 | ------------             | -----------------------------------                     |
-| **OperationId**              | **2ba1dcbb920c0c489823e86ee57e557d**                |
+| **OperationId**          | **2ba1dcbb920c0c489823e86ee57e557d**                    |
 | ParentId                 | 2ba1dcbb920c0c489823e86ee57e557d                        |
 | Request-Id               | \|2ba1dcbb920c0c489823e86ee57e557d.509b52d5c4ba6145.    |
 | (custom) HostInstanceId  | 0a57ccf6-58ea-4392-9da0-aaf0c043715a                    |
 | (custom) InvocationId    | f860490b-30c2-4cb7-8688-10076b02ba7d                    |
 
-Dependency telemetry item:
+Callers Dependency telemetry item:
 
-| Property                 | Value                                                   |
-| ------------             | -----------------------------------                     |
-| Remote Dependency Name   | GET /r/1ccpqtm1                                         |
-| Operation Id             | 2ba1dcbb920c0c489823e86ee57e557d                        |
-| Parent Id                | \|2ba1dcbb920c0c489823e86ee57e557d.509b52d5c4ba6145.    |
-| **Dependency Id**        | **\|2ba1dcbb920c0c489823e86ee57e557d.82c588a5d78c3f4a.**    |
-| (custom) HostInstanceId  | 0a57ccf6-58ea-4392-9da0-aaf0c043715a                    |
-| (custom) InvocationId    | f860490b-30c2-4cb7-8688-10076b02ba7d                    |
+| Property                 | Value                                                    |
+| ------------             | -----------------------------------                      |
+| Remote Dependency Name   | GET /r/1ccpqtm1                                          |
+| Operation Id             | 2ba1dcbb920c0c489823e86ee57e557d                         |
+| Parent Id                | \|2ba1dcbb920c0c489823e86ee57e557d.509b52d5c4ba6145.     |
+| **Dependency Id**        | **\|2ba1dcbb920c0c489823e86ee57e557d.82c588a5d78c3f4a.** |
+| (custom) HostInstanceId  | 0a57ccf6-58ea-4392-9da0-aaf0c043715a                     |
+| (custom) InvocationId    | f860490b-30c2-4cb7-8688-10076b02ba7d                     |
+
+In addition there will be a Receiver telemetry
+
+# === TODO: RERUN SCENARIO AND DOCUMENT RECEIVING SIDE + MAKE SCREENSHOTS ON APP INSIGHTS
 
 #### **How this works**
 
-This means that the dependency telemetry item's `Dependency Id` is set on the outbound HTTP call's `TraceParent` and `Request-Id` so it can be picked up by the receiver.  In addition to this parent/child relation, the identifier for the caller's App Insights resource (**appId**) is passed in the HTTP `Request-Context` header.  This is to enable cross-workspace discovery to power tooling with like the App Insights App Map experience.
+This means that the dependency telemetry item's `Dependency Id` is set on the outbound HTTP call's `TraceParent` and `Request-Id` so it can be picked up by the receiver and set as its parent.  In addition to this parent/child relation, the identifier for the caller's App Insights resource (**appId**) is passed back in the HTTP response `Request-Context` header.  This is to enable cross-workspace discovery to power tooling with like the App Insights App Map experience.
 
-> Note This mechasnism for flowing App Insights Resource information (AppId) only works for solicit response calls (e.g. HTTP) and will not work for calls which have Service Bus, or Event Grid in between to de-couple. Additional App Insights work will land somewhere around Q1CY20 to address this.
+> Note This mechanism for flowing App Insights Resource information (AppId) only works for solicit response calls (e.g. HTTP) and will not work for calls which have Service Bus, or Event Grid in between to de-couple. 
+> Additional App Insights work will land somewhere around Q1CY20 to address this.  So please consider this an implementation detail which is bound to change.
 
-### **Scenario 2: Azure Function to Azure Service Bus**
+#### How to run this scenario yourself
 
-'FunctionA' enqueues a message to Service Bus
+Please go into folder `./scenarios/scenario-a-function-a-to-function-b-over-http.http` and using the VS Code `REST Client` extension, run the scenario by clicking `Send Request`
 
-- no custom correlation code in function
-- no special configuration on Service Bus
 
-#### The First Test
+### **Scenario 2: Function A calling Function B over Azure Service Bus**
 
-~~~ps
+`Function A` enqueues a message to `Azure Service Bus`, which in turn gets picked up by `Function B`.
 
-# Function: InitiateFlowToQueue
-
-@submissionid = {{$guid}}
-POST {{protocol}}://{{hosta}}/api/queue/{{submissionid}} HTTP/1.1
-
-~~~
-
-Submits an HTTP POST to the deployed Function App A - with a submission Id.
+# TODO REVISIT THIS
 
 The submission id, a guid here, represents an identifier for the function activity. An example might be a shopping-cart-Id for an Azure function that performs stock check availability for an e-commerce application shopping cart.
 

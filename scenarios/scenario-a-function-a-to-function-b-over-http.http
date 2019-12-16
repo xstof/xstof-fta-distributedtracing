@@ -1,0 +1,14 @@
+@hostnamea = aicorr4-fn-a.azurewebsites.net
+@hostnameb = aicorr4-fn-b.azurewebsites.net
+## if needed declare host and port e.g. localhost:8080
+@hosta = {{hostnamea}}
+@hostb = {{hostnameb}}
+@contentType = application/json
+@protocol = https
+@submissionid = {{$guid}}
+
+http://localhost:5000
+
+
+### USING FUNCTION A CALL FUNCTION B OVER HTTP, GET A RESPONSE BACK
+GET {{protocol}}://{{hosta}}/api/callhttpwithrespfromb
