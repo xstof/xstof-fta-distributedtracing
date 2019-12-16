@@ -152,8 +152,20 @@ namespace eg_webhook_api.Controllers
             // r.Context.Operation.Id = details.TraceParent.Split('-')[1];             // initiate the logical operation ID (trace id)
             // r.Context.Operation.ParentId = details.TraceParent.Split('-')[2];       // this is the first span in a trace
 
-            // Start Operation
-            var op = _telemClient.StartOperation<RequestTelemetry>($"HandleCloudEvent {AEGSubscriptionName}", details.TraceParent.Split('-')[1], details.TraceParent.Split('-')[2]);
+            // Start Operation and add baggage from incoming event
+            var eventGridReceivalActivity = new Activity("EventGridHandling");
+            var baggage = parseBaggage(details.TraceState);
+
+            foreach(var item in baggage){
+                eventGridReceivalActivity.AddBaggage(item.Key, item.Value);
+            }
+            
+            eventGridReceivalActivity.SetParentId(details.TraceParent);
+            //eventGridReceivalActivity.SetParentId(details.TraceParent.Split('-')[2]);
+            //eventGridReceivalActivity.=  details.TraceParent.Split('-')[1];
+            
+            //var op = _telemClient.StartOperation<RequestTelemetry>($"HandleCloudEvent {AEGSubscriptionName}", details.TraceParent.Split('-')[1], details.TraceParent.Split('-')[2]);
+            var op = _telemClient.StartOperation<RequestTelemetry>(eventGridReceivalActivity);
 
             _logger.LogInformation(sb.ToString());
             // TODO: do some stuff in between to see if correlations are being passed on
@@ -162,6 +174,20 @@ namespace eg_webhook_api.Controllers
             _telemClient.StopOperation(op);
 
             return Ok();
+        }
+
+        private List<KeyValuePair<string, string>> parseBaggage(string baggage){
+            var splittedBaggage = baggage.Split(',');
+            var parsedBaggage = new List<KeyValuePair<string, string>>();
+
+            foreach(string item in splittedBaggage){
+                var kvp = item.Split('=');
+                if (kvp.Length == 2){
+                    parsedBaggage.Add(new KeyValuePair<string,string>(kvp[0], kvp[1]));
+                }
+            }
+
+            return parsedBaggage;
         }
 
         private bool IsCloudEvent(string jsonContent, out CloudEvent<dynamic> cloudEvent)
