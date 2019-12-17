@@ -63,6 +63,7 @@ namespace FTA.AICorrelation
             ILogger log)
         {
             log.LogInformation("C# SendBackHttpResponseFromB HTTP trigger function processed a request.");
+            Console.WriteLine("C# SendBackHttpResponseFromB HTTP trigger function processed a request.");
 
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             dynamic data = JsonConvert.DeserializeObject(requestBody);
@@ -70,7 +71,11 @@ namespace FTA.AICorrelation
             DumpActivity(Activity.Current, log);
             
             // sending to http bin container which runs in ACI
+            log.LogInformation($"Calling http proxy at: {_httpProxyBaseUrl}");
+            Console.WriteLine($"Calling http proxy at: {_httpProxyBaseUrl}");
             await _httpClient.GetAsync(_httpProxyBaseUrl);
+            log.LogInformation($"Called http proxy at: {_httpProxyBaseUrl}");
+            Console.WriteLine($"Called http proxy at: {_httpProxyBaseUrl}");
 
             return (ActionResult)new OkObjectResult($"");
         }

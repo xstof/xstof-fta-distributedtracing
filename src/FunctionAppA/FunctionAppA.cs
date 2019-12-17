@@ -109,8 +109,12 @@ namespace FTA.AICorrelation
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             dynamic data = JsonConvert.DeserializeObject(requestBody);
             
-            // sending to http bin container which runs in ACI
+            // sending to reverse proxy which allows request inspection and runs in ACI:
+            log.LogInformation($"Calling http proxy at: {_httpProxyBaseUrl}");
+            Console.WriteLine($"Calling http proxy at: {_httpProxyBaseUrl}");
             await _httpClient.GetAsync(_httpProxyBaseUrl);
+            log.LogInformation($"Called http proxy at: {_httpProxyBaseUrl}");
+            Console.WriteLine($"Called http proxy at: {_httpProxyBaseUrl}");
 
             return (ActionResult)new OkObjectResult($"");
         }
@@ -132,6 +136,7 @@ namespace FTA.AICorrelation
             // send to the second function app, assuming this runs locally on port 7072
             // TODO: fix this, move this into app settings, populated by ARM template
             await _httpClient.GetAsync($"{this._functionAppBUrl}/api/http");
+            log.LogInformation($"Called function B at: {this._functionAppBUrl}/api/http");
 
             return (ActionResult)new OkObjectResult($"");
         }

@@ -13,6 +13,12 @@
             "console": "internalConsole"
         },
         {
+            "name": "Attach to Function",
+            "type": "coreclr",
+            "request": "attach",
+            "processId": "${command:pickProcess}"
+        },
+        {
             "name": "Attach to Node Functions",
             "type": "node",
             "request": "attach",
