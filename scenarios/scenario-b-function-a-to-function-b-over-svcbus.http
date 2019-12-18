@@ -1,4 +1,4 @@
-@hostnamea = begim-fn-a.azurewebsites.net
+@hostnamea = aicorr4-fn-a.azurewebsites.net
 ## if needed declare host and port e.g. localhost:8080
 @hosta = {{hostnamea}}
 @contentType = application/json
@@ -10,3 +10,7 @@ http://localhost:5000
 ### USING FUNCTION A PUT A MSG ON A QUEUE TO BE PICKED UP BY FUNCTION B
 @submissionid = {{$guid}}
 POST {{protocol}}://{{hosta}}/api/queue/{{submissionid}} HTTP/1.1
+
+### USING FUNCTION A PUT A MSG ON A QUEUE TO BE PICKED UP BY FUNCTION B - WITH BAGGAGE
+@submissionid = {{$guid}}
+POST {{protocol}}://{{hosta}}/api/queue-with-bagage/{{submissionid}} HTTP/1.1

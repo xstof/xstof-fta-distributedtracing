@@ -27,8 +27,8 @@ The interesting properties that appear as headers on the outbound HTTP call from
 
 | Header                   | Value                                                       | Comment                                          |
 | ------------             | -----------------------------------                         | ------------------------------------             |
-| **TraceParent**          | **00-2ba1dcbb920c0c489823e86ee57e557d-82c588a5d78c3f4a-00** | is the new W3C trace context                     |
-| **Request-Id**           | **\|2ba1dcbb920c0c489823e86ee57e557d.82c588a5d78c3f4a.**    | is the older "request-id" mechanism              |
+| **TraceParent**          | **00-82f645b4d9b3884dba25016062a4652b-5ff3aa304adc3449-00** | is the new W3C trace context                     |
+| **Request-Id**           | **\|82f645b4d9b3884dba25016062a4652b.5ff3aa304adc3449.**    | is the older "request-id" mechanism              |
 | **Request-Context**      | **appId=cid-v1:6b06625e-3d1f-4bb4-8b50-b22b20b5a6d6**       | represents the app id for App Insights A         |
 | X-Request-Id             | c39043fc-5693-4ca6-ba3c-56cf059acbad                        | NOT important to the discussion - IGNORE THIS    |
 
@@ -38,43 +38,64 @@ The interesting properties that appear as headers on the outbound HTTP call from
 > Because this value is obtained (non blocking) by the runtime, note that the first few calls may not return it.
 > Ref https://github.com/microsoft/ApplicationInsights-dotnet-server/issues/504
 
-... and what we see on App Insights is two telemetry items for Function A: one for the Request and one for the Dependency being called within the request:
+... and what we see on App Insights is two telemetry items for Function A: 
 
-Callers Request telemetry item:
+- one for the Request and 
+- one for the Dependency being called within the request
 
-| Property                 | Value                                                   |
-| ------------             | -----------------------------------                     |
-| **OperationId**          | **2ba1dcbb920c0c489823e86ee57e557d**                    |
-| ParentId                 | 2ba1dcbb920c0c489823e86ee57e557d                        |
-| Request-Id               | \|2ba1dcbb920c0c489823e86ee57e557d.509b52d5c4ba6145.    |
-| (custom) HostInstanceId  | 0a57ccf6-58ea-4392-9da0-aaf0c043715a                    |
-| (custom) InvocationId    | f860490b-30c2-4cb7-8688-10076b02ba7d                    |
+Callers Request telemetry item (which we find back in App Insights A):
 
-Callers Dependency telemetry item:
+| Property                 | Value                                                   |  Comments
+| ------------             | -----------------------------------                     | -----------------
+| **Operation Id**         | **82f645b4d9b3884dba25016062a4652b**                    |
+| Parent Id                | 82f645b4d9b3884dba25016062a4652b                        | ParentId is same as OperationId for root activity
+| Request Id               | **e47cce764c811a41**                                    | Unique identifier for this request
+
+![scenario-a-appinsights-a-request-telemetry](./images/scenario-a-appinsights-a-request-telemetry.png)
+
+Callers Dependency telemetry item (which we find back in App Insights A):
 
 | Property                 | Value                                                    |
 | ------------             | -----------------------------------                      |
-| Remote Dependency Name   | GET /r/1ccpqtm1                                          |
-| Operation Id             | 2ba1dcbb920c0c489823e86ee57e557d                         |
-| Parent Id                | \|2ba1dcbb920c0c489823e86ee57e557d.509b52d5c4ba6145.     |
-| **Dependency Id**        | **\|2ba1dcbb920c0c489823e86ee57e557d.82c588a5d78c3f4a.** |
-| (custom) HostInstanceId  | 0a57ccf6-58ea-4392-9da0-aaf0c043715a                     |
-| (custom) InvocationId    | f860490b-30c2-4cb7-8688-10076b02ba7d                     |
+| Operation Id             | 82f645b4d9b3884dba25016062a4652b                         |
+| **Parent Id**            | **e47cce764c811a41**                                     | ParentId is same as Request Id of the req telemetry item
+| **Dependency Id**        | **5ff3aa304adc3449**                                     | Unique identifier for this outbound dependency
 
-In addition there will be a Receiver telemetry
+![scenario-a-appinsights-a-dep-telemetry](./images/scenario-a-appinsights-a-dep-telemetry.png)
 
-# === TODO: RERUN SCENARIO AND DOCUMENT RECEIVING SIDE + MAKE SCREENSHOTS ON APP INSIGHTS ===
+In addition there will be telemtry emmited by the receiver of this HTTP call:
+
+Receiver Request telemetry item (which we find back in App Insights B):
+
+| Property                 | Value                                                   |  Comments
+| ------------             | -----------------------------------                     | -----------------
+| Operation Id             | 82f645b4d9b3884dba25016062a4652b                        |
+| **Parent Id**            | **5ff3aa304adc3449**                                    | Parent Id is same as Dependency Id for dependency telemetry item in App Insights A
+| **Request Id**           | **a812130c075b7646**                                    | Unique identifier for this request
+
+![scenario-a-appinsights-b-request-telemetry](./images/scenario-a-appinsights-b-request-telemetry.png)
+
+Receiver Dependency telemetry item (which we find back in App Insights B):
+
+| Property                 | Value                                                    |
+| ------------             | -----------------------------------                      |
+| Operation Id             | 82f645b4d9b3884dba25016062a4652b                         |
+| **Parent Id**            | **a812130c075b7646**                                     | ParentId is same as Request Id of the req telemetry item
+| **Dependency Id**        | **53967077806ccc4f**                                     | Unique identifier for this outbound dependency
+
+![scenario-a-appinsights-b-dep-telemetry](./images/scenario-a-appinsights-b-dep-telemetry.png)
+
 
 #### **How this works**
 
-This means that the dependency telemetry item's `Dependency Id` is set on the outbound HTTP call's `TraceParent` and `Request-Id` so it can be picked up by the receiver and set as its parent.  In addition to this parent/child relation, the identifier for the caller's App Insights resource (**appId**) is passed back in the HTTP response `Request-Context` header.  This is to enable cross-workspace discovery to power tooling with like the App Insights App Map experience.
+This means that the dependency telemetry item's `Dependency Id` is set on the outbound HTTP call's `TraceParent` and `Request Id` so it can be picked up by the receiver and set as its parent.  In addition to this parent/child relation, the identifier for the caller's App Insights resource (**appId**) is passed back in the HTTP response `Request-Context` header.  This is to enable cross-workspace discovery to power tooling with like the App Insights App Map experience.
 
 > Note This mechanism for flowing App Insights Resource information (AppId) only works for solicit response calls (e.g. HTTP) and will not work for calls which have Service Bus, or Event Grid in between to de-couple. 
 > Additional App Insights work will land somewhere around Q1CY20 to address this.  So please consider this an implementation detail which is bound to change.
 
 #### How to run this scenario yourself
 
-Please go into folder `./scenarios/scenario-a-function-a-to-function-b-over-http.http` and using the VS Code `REST Client` extension, run the scenario by clicking `Send Request`
+Please go into folder `./scenarios/scenario-a-function-a-to-function-b-over-http.http` and using the VS Code `REST Client` extension, run the scenario by clicking `Send Request`.
 
 
 ### **Scenario 2a: Function A calling Function B over Azure Service Bus**
@@ -88,9 +109,9 @@ TODO
 Before moving on to scenario 2b, this section explains in more detail how custom metadata can be flown through the telemetry using .NET Core.
 
 #### Introducing the Activity Framework
-.NET Core features a very consistent way to model how logical "activities" call each other in sequential and hierarchical ways.  By means of the [`System.Diagnostics.Actvity`](https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.activity?view=netcore-3.1) framework .NET code keeps track of the currently executing activity.  The currently executing `Activity` can be accessed through `Activity.Current` and provides the logging framework with the context required to log information with all the metadata which one would expect:
+.NET Core features a very consistent way to model how logical "activities" call each other in sequential and hierarchical ways.  By means of the [`System.Diagnostics.Activity`](https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.activity?view=netcore-3.1) framework .NET code keeps track of the currently executing activity.  The currently executing `Activity` can be accessed through `Activity.Current` and provides the logging framework with the context required to log information with all the metadata which one would expect:
 - an activity has a unique identifier
-- an activity know about it's parent activity
+- an activity knows about it's parent activity
 - an activity knows when it was started, stopped and what its duration was
 - an activity can keep track on context needed for logging ([`Tags`](https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.activity.tags?view=netcore-3.1#System_Diagnostics_Activity_Tags))
 - an activity knows about context which should be propagated onto external dependencies ([`Baggage`](https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.activity.addbaggage?view=netcore-3.1#System_Diagnostics_Activity_AddBaggage_System_String_System_String_))
@@ -99,6 +120,7 @@ For more guidance on how to use the `Activity` framework, please see the [Activi
 
 #### TODO: enrich content on Activity Framework with Diagnostic Listeners
 
+#### TODO: when to use TelemetryInitializer vs System.Diagnostics.Activity
 
 ### **Scenario 2b: revisiting scenario 2 and adding custom metadata to the telemetry**
 
