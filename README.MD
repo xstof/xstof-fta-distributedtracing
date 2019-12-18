@@ -220,6 +220,38 @@ Note how our `MyCustomCorrId` is stamped even on that dependency item (while the
 
 Please go into folder `./scenarios/scenario-b-function-a-to-function-b-over-svcbus.http` and using the VS Code `REST Client` extension, run the scenario by clicking `Send Request` on the **second** POST item.
 
+### **Using Kusto to correlate items with a custom correlation ID**
+
+Now that we know how to add custom correlation context to our telemetry, we can write a Kusto query as below to find telemetry with a given custom correlation ID, within a single App Insights component/workspace:
+
+~~~kusto
+(requests | union dependencies | union pageViews)
+| extend MyCustomCorrId = tostring(customDimensions.MyCustomCorrId)
+| where  MyCustomCorrId == "b5ee9818-080c-49ab-894a-c9eb3490ed1a"
+~~~
+
+The "app()" keyword allows you to union and join data across workspaces, [see the documentation for this](https://docs.microsoft.com/en-us/azure/azure-monitor/log-query/cross-workspace-query#identifying-an-application).  
+
+> Note The LA workspace behind App Insights has not historically been exactly the same as the run-of-the-mill LA workspace you create. See [here](https://docs.microsoft.com/en-us/azure/azure-monitor/log-query/unify-app-resource-data#application-insights-and-log-analytics-workspace-schema-differences) for more info.
+
+This could look something like:
+
+~~~kusto
+let allApps = union app('aicorr-fn-appinsights-a').requests, app('aicorr-fn-appinsights-b').requests,
+              app('aicorr-fn-appinsights-a').dependencies, app('aicorr-fn-appinsights-b').dependencies,
+              app('aicorr-fn-appinsights-a').exceptions, app('aicorr-fn-appinsights-b').exceptions,
+              app('aicorr-fn-appinsights-a').traces, app('aicorr-fn-appinsights-b').traces,
+              app('aicorr-fn-appinsights-a').customEvents, app('aicorr-fn-appinsights-b').customEvents;
+allApps
+| extend MyCustomCorrId = tostring(customDimensions.MyCustomCorrId) 
+| where  MyCustomCorrId == "b5ee9818-080c-49ab-894a-c9eb3490ed1a"
+| order by timestamp asc
+~~~
+
+![kusto-correlate-on-custom-corr-id](./images/kusto-correlate-on-custom-corr-id.png)
+
+
+
 
 # TODO: REVISIT DOWN FROM HERE
 
@@ -342,44 +374,6 @@ Even beyond this... if FunctionB does an outbound HTTP calls, that custom metada
 >
 > This gap will be mitigated in the near to medium term future.
 
-### Using Kusto to correlate items with a custom correlation ID
-
-You could write a Kusto query as below to find telemetry with a custom correlation ID, within a single App Insights component/workspace:
-
-~~~kusto
-(requests | union dependencies | union pageViews)
-| extend MyCustomCorrId = tostring(customDimensions.MyCustomCorrId)
-| where  MyCustomCorrId == "7d767f42-3e80-4e4e-9d40-44edb59af6f3"
-~~~
-
-The "app()" keyword allows you to union and join data across workspaces, [see the documentation for this](https://docs.microsoft.com/en-us/azure/azure-monitor/log-query/cross-workspace-query#identifying-an-application).  
-
-> Note The LA workspace behind App Insights has not historically been exactly the same as the run-of-the-mill LA workspace you create. See [here](https://docs.microsoft.com/en-us/azure/azure-monitor/log-query/unify-app-resource-data#application-insights-and-log-analytics-workspace-schema-differences) for more info.
-
-This could look something like:
-
-~~~kusto
-let allApps = union app('aicorr-fn-appinsights-a').requests, app('aicorr-fn-appinsights-b').requests,
-              app('aicorr-fn-appinsights-a').dependencies, app('aicorr-fn-appinsights-b').dependencies,
-              app('aicorr-fn-appinsights-a').exceptions, app('aicorr-fn-appinsights-b').exceptions,
-              app('aicorr-fn-appinsights-a').traces, app('aicorr-fn-appinsights-b').traces,
-              app('aicorr-fn-appinsights-a').customEvents, app('aicorr-fn-appinsights-b').customEvents;
-allApps
-| extend MyCustomCorrId = tostring(customDimensions.MyCustomCorrId) 
-| where  MyCustomCorrId == "7d767f42-3e80-4e4e-9d40-44edb59af6f3"
-| order by timestamp asc
-~~~
-
-![la-cross-component-query](./images/la-query-cross-component-custom-corrid.png)
-
-- notice how the very first function call is _not_ present; which is because we only set the baggage _within_ that activity, when it already started.  Any activities that started after we set the baggage got the custom correlation id stamped on them and as such are retrieved by the query
-- to mitigate this, you'll want to stamp the original request with a tag, in additional to the baggage, like the below.  The above query would not need to be changed for this.
-
-~~~cs
-currActivity.AddTag("MyCustomCorrId", submissionId);
-~~~
-
-![fn-to-svcbus-to-fn-to-http](./images/fn-to-svcbus-to-fn-to-http.png)
 
 ### Function -> Logic App (no custom modifications)
 
