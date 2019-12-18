@@ -102,14 +102,8 @@ Please go into folder `./scenarios/scenario-a-function-a-to-function-b-over-http
 
 `Function A` enqueues a message to `Azure Service Bus`, which in turn gets picked up by `Function B`.
 
-
-This message when it enters the queue will have metadata stamped on top of it, like this:
-
-![scenario-b-svcbus-msg-props](./images/scenario-b-svcbus-msg-props.png)
-
-As you can see, the `Diagnostic-Id` is the Service Bus equivalent of the `traceparent` header which is used with HTTP calls.  It allows the Service Bus SDK to flow the correlation context (`Operation Id` and `Dependency Id` of the caller) onto whoever will be receiving this message.
-
-For more information on how Azure Service Bus supports distributed correlation, [please see here](https://docs.microsoft.com/en-us/azure/service-bus-messaging/service-bus-end-to-end-tracing).
+> Note: We have intentionally added an additional App Insights Resource for Function B to send its telemetry to. Today the App Insights view would be clearer if our multiple components sent to the same instrumentation-key (Resource) but some customers would see Service Bus as a logical boundary between different parts of an application (for example) so it's perfectly common for customers to use more than one Application Insights Resource across a distributed systems architecture.
+Today this is not well supported in App Insight - [as documented here](https://docs.microsoft.com/en-us/azure/azure-monitor/app/custom-operations-tracking#queue-instrumentation). Work should land by Q1CY20 to ensure that App Insights can more easily detect where related Telemetry spans more than one App Insights Resource.
 
 Similar to scenario A, we'll see both a:
 
@@ -147,7 +141,20 @@ Note how the receiving function:
 - has its parent id on the request telemetry item equal to the dependency id of the calling function's dependency telemetry item
 - has its operation id the same as the calling function's operation id
 
-# TODO: REVISIT DOWN FROM HERE
+#### How this works
+
+The message when it enters the queue will have metadata stamped on top of it, like this:
+
+![scenario-b-svcbus-msg-props](./images/scenario-b-svcbus-msg-props.png)
+
+As you can see, the `Diagnostic-Id` is the Service Bus equivalent of the `traceparent` header which is used with HTTP calls.  It allows the Service Bus SDK to flow the correlation context (`Operation Id` and `Dependency Id` of the caller) onto whoever will be receiving this message.
+
+For more information on how Azure Service Bus supports distributed correlation, [please see here](https://docs.microsoft.com/en-us/azure/service-bus-messaging/service-bus-end-to-end-tracing).
+
+#### How to run this scenario yourself
+
+Please go into folder `./scenarios/scenario-b-function-a-to-function-b-over-svcbus.http` and using the VS Code `REST Client` extension, run the scenario by clicking `Send Request` on the first POST item.
+
 
 ### Stamping custom metadata on telemetry items (.NET Core)
 
@@ -167,17 +174,15 @@ For more guidance on how to use the `Activity` framework, please see the [Activi
 
 #### TODO: when to use TelemetryInitializer vs System.Diagnostics.Activity
 
-### **Scenario 2b: revisiting scenario 2 and adding custom metadata to the telemetry**
+### **Scenario B2: revisiting scenario 2 and adding custom metadata to the telemetry**
 
-`Function A` enqueues a message to `Azure Service Bus`, which in turn gets picked up by `Function B`.
+`Function A` enqueues a message to `Azure Service Bus`, which in turn gets picked up by `Function B`.  In the process we'll be adding a custom correlation identifier which gets stamped on all telemetry.
 
-# TODO REVISIT THIS
+Building onto the previous sample, now we will be using a `SubmissionId` when we call into Function A.  (This is an identifier passed as a parameter on the url when calling Function A.) This `SubmissionId`, which in the sample scenario is a guid, represents an identifier for the function activity. An example might be a shopping-cart-Id for an Azure function that performs stock check availability for an e-commerce application shopping cart.  In general the `SubmissionId` in the sample represents a meaningful identifier to the business upon which telemetry can be filtered upon later in the process.
 
-The `SubmissionId`, which in the sample scenario is a guid, represents an identifier for the function activity. An example might be a shopping-cart-Id for an Azure function that performs stock check availability for an e-commerce application shopping cart.  In general the `SubmissionId` in the sample represents a meaningful identifier to the business upon which telemetry can be filtered upon later in the process.
+The function logs the Submission Id, adds it to the payload of the Service Bus Queue Message which will be output and finally tracks it against the Application Insights Request telemetry.  When Function B receives the message, it will see the `SubmissionId` and will record that, just like Function A, as custom properties on on the App Insights telemetry items.
 
-The function logs the Submission Id, adds it to the payload of the Service Bus Queue Message which will be output and finally tracks it against the Application Insights Request telemetry.
-
-#### Recording custom telemetry on a function invocation's telemetry
+#### Recording custom context on a function invocation's telemetry
 
 Recording custom properties on the telemetry created during a function invocation is as easy as:
 
@@ -188,72 +193,41 @@ Activity currActivity = Activity.Current;
 currActivity.AddTag("MySubmissionId", submissionId);
 ~~~
 
-Note: this records the custom property on the `request` telemetry item not on any dependency items this invocation created (this value does not appear on the dependency telemetry representing the Service Bus Enqueue call).
+This records the custom property on the `request` telemetry item in Function A, but NOT on any dependency items generated during the function invocation. (You can verify this by checking that this property does not appear on the dependency telemetry representing the Service Bus Enqueue call).
 
-#### **Results**
+Any `Tags` added like this within a function translate into custom properties on the request telemetry in App Insights, like this:
 
-Because both Functions Runtime v2.0 and Azure Service Bus support the required correlation headers this scenario will work out of box!
+![scenario-b2-add-tag-custom-prop](./images/scenario-b2-add-tag-custom-prop.png)
 
-Searching in Application Insights for the Telemetry created during the function invocation shows:
-- The Request to Azure function
-- The Dependency (Service Bus)
-- The log calls - piped as App Insights Trace Telemetry
+#### Flowing custom context onto downstream dependencies
 
-![fna-enqueue-ai-search](./images/fna-enqueue-ai-search.JPG)
+Improving upon the previous scenario, we also want to make sure to record our `MySubmissionId` as custom context onto any downstream dependencies (and their dependencies in turn).  Within Function A there is code like the below which adds `Baggage` onto the current `Activity`:
 
-Clicking the Request Telemetry items opens the "End to End" experience which defaults to a condensed view - showing the Request and the Dependency
+~~~cs
+Activity currActivity = Activity.Current;
 
-![fna-enqueue-ai-e2e](./images/fna-enqueue-ai-e2e.JPG)
+currActivity.AddTag("MyCustomCorrId", submissionId);
+currActivity.AddBaggage("MyCustomCorrId", submissionId);
+~~~
 
-Expanding this (show all) adds the trace telemetry items
+By adding this baggage, we're indicating that we want to flow this custom context onto any downstream dependencies.  This will reflect within App Insights as `MyCustomCorrId` being stamped as a custom property on any downstream telemetry items in BOTH App Insights A and App Insights B.  For example, have a look at the dependency telemetry item in App Insights B (which represents an external HTTP dependency which Function B is calling after receiving the Service Bus message):
 
-![fna-enqueue-ai-e2e-all](./images/fna-enqueue-ai-e2e-all.JPG)
+![scenario-b2-add-baggage-custom-prop](./images/scenario-b2-add-baggage-custom-prop.png)
 
-The submission-id custom property (added as a System Diagnostic Activity Tag and read by App Insights SDK) along with the Operation Id and other key fields can be seen if you click through on a Telemetry item (remember to expand the initial condensed view of properties to see all).
+Note how our `MyCustomCorrId` is stamped even on that dependency item (while there is _no code within Function B to add this context context explicitly_.)
 
-![fna-enqueue-ai-e2e-tagprop](./images/fna-enqueue-ai-e2e-tagprop.JPG)
+#### How to run this scenario yourself
 
-#### The Second Test
+Please go into folder `./scenarios/scenario-b-function-a-to-function-b-over-svcbus.http` and using the VS Code `REST Client` extension, run the scenario by clicking `Send Request` on the **second** POST item.
 
-Extending the first test, but now there is another function (Function App B) linked to another App Insights resource, which receives the message.
 
-> Note: We have intentionally added an additional App Insights Resource for Function B to send its telemetry to. Today the App Insights view would be clearer if our multiple components sent to the same instrumentation-key (Resource) but some customers would see Service Bus as a logical boundary between different parts of an application (for example) so it's perfectly common for customers to use more than one Application Insights Resource across a distributed systems architecture.
-Today this is not well supported in App Insight - [as documented here](https://docs.microsoft.com/en-us/azure/azure-monitor/app/custom-operations-tracking#queue-instrumentation). Work should land by Q1CY20 to ensure that App Insights can more easily detect where related Telemetry spans more than one App Insights Resource.
+# TODO: REVISIT DOWN FROM HERE
 
-Like the first test, this second test has:
+### **Scenario C: Logic Apps Receiving inbound call from Function A and calling Function B in turn**
 
-- No custom correlation code in function
-- No special configuration on Service Bus
+TODO
 
-#### **Results**
-
-Function B logs the invocation to App Insights but does not mention or show a correlation or dependency to the service bus queue or message
-However, there IS a correlation to be found in the properties.  
-Notice how the request on AI B has a `Parent Id` which is equal to AI A `Dependency Id`. The telemetry also shares Operation-id.
-
-The Telemetry for Function A, App Insights A
-
-![fna-enqueue-ai-depends](./images/fna-enqueue-ai-depends.JPG)
-
-The Telemetry for Function B, App Insights B - note the Parent-Id and Operation-Id of B matches the Operation-id and Dependency-id for A.
-
-![fnb-enqueue-ai-depends](./images/fnb-enqueue-ai-depends.JPG)
-
-> Note: Submission-id is not recorded from Function B into App Insights other than by the trace of the message body which contains it.
-
-#### **How this works**
-
-Azure Functions records metadata on the service bus message, in particular:
-
-- `$AzureWebJobsParentId` is set to the `InvocationId` of the dependency entry, which in turn is also the same as the request entry - as the InvocationId indicates the unique invocation identifier of the function.
-- `Diagnostic-Id` is set to the `Dependency Id` of the dependency entry of the function which submitted the message
-- Function B takes this `DiagnosticId` metadata and uses that as it's `Parent Id`
-
-Note the [Service Bus Explorer](https://github.com/paolosalvatori/ServiceBusExplorer) Message Properties View here is indicative, the values do not match the test above.
-
-![svcbus-metadata](./images/svcbus-metadata.png)
-
-### **Scenario 3: Event Grid**
+### **Scenario E: Event Grid**
 
 Unlike the scenario with Service Bus, Event Grid does not flow distributed component correlation for App Insights or any other APM today. However, the preview [CloudEvents Schema](https://github.com/cloudevents/spec/blob/v1.0/spec.md) does support an [extension for trace properties](https://github.com/cloudevents/spec/blob/v1.0/extensions/distributed-tracing.md).
 
