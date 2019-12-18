@@ -63,7 +63,7 @@ Callers Dependency telemetry item:
 
 In addition there will be a Receiver telemetry
 
-# === TODO: RERUN SCENARIO AND DOCUMENT RECEIVING SIDE + MAKE SCREENSHOTS ON APP INSIGHTS
+# === TODO: RERUN SCENARIO AND DOCUMENT RECEIVING SIDE + MAKE SCREENSHOTS ON APP INSIGHTS ===
 
 #### **How this works**
 
@@ -77,15 +77,38 @@ This means that the dependency telemetry item's `Dependency Id` is set on the ou
 Please go into folder `./scenarios/scenario-a-function-a-to-function-b-over-http.http` and using the VS Code `REST Client` extension, run the scenario by clicking `Send Request`
 
 
-### **Scenario 2: Function A calling Function B over Azure Service Bus**
+### **Scenario 2a: Function A calling Function B over Azure Service Bus**
+
+`Function A` enqueues a message to `Azure Service Bus`, which in turn gets picked up by `Function B`.
+
+TODO
+
+### Stamping custom metadata on telemetry items (.NET Core)
+
+Before moving on to scenario 2b, this section explains in more detail how custom metadata can be flown through the telemetry using .NET Core.
+
+#### Introducing the Activity Framework
+.NET Core features a very consistent way to model how logical "activities" call each other in sequential and hierarchical ways.  By means of the [`System.Diagnostics.Actvity`](https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.activity?view=netcore-3.1) framework .NET code keeps track of the currently executing activity.  The currently executing `Activity` can be accessed through `Activity.Current` and provides the logging framework with the context required to log information with all the metadata which one would expect:
+- an activity has a unique identifier
+- an activity know about it's parent activity
+- an activity knows when it was started, stopped and what its duration was
+- an activity can keep track on context needed for logging ([`Tags`](https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.activity.tags?view=netcore-3.1#System_Diagnostics_Activity_Tags))
+- an activity knows about context which should be propagated onto external dependencies ([`Baggage`](https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.activity.addbaggage?view=netcore-3.1#System_Diagnostics_Activity_AddBaggage_System_String_System_String_))
+
+For more guidance on how to use the `Activity` framework, please see the [Activity User Guide](https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md)
+
+#### TODO: enrich content on Activity Framework with Diagnostic Listeners
+
+
+### **Scenario 2b: revisiting scenario 2 and adding custom metadata to the telemetry**
 
 `Function A` enqueues a message to `Azure Service Bus`, which in turn gets picked up by `Function B`.
 
 # TODO REVISIT THIS
 
-The submission id, a guid here, represents an identifier for the function activity. An example might be a shopping-cart-Id for an Azure function that performs stock check availability for an e-commerce application shopping cart.
+The `SubmissionId`, which in the sample scenario is a guid, represents an identifier for the function activity. An example might be a shopping-cart-Id for an Azure function that performs stock check availability for an e-commerce application shopping cart.  In general the `SubmissionId` in the sample represents a meaningful identifier to the business upon which telemetry can be filtered upon later in the process.
 
-The function logs the submission-id, adds it to the payload of the Service Bus Queue Message which will be output and finally tracks it against the Application Insights Request telemetry.
+The function logs the Submission Id, adds it to the payload of the Service Bus Queue Message which will be output and finally tracks it against the Application Insights Request telemetry.
 
 #### Recording custom telemetry on a function invocation's telemetry
 
