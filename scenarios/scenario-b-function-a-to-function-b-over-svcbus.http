@@ -1,16 +1,17 @@
-@hostnamea = aicorr4-fn-a.azurewebsites.net
-## if needed declare host and port e.g. localhost:8080
-@hosta = {{hostnamea}}
+#@hosta = aicorr4-fn-a.azurewebsites.net
+#@port = 80
 @contentType = application/json
-@protocol = https
+@protocol = http
 @submissionid = {{$guid}}
 
-http://localhost:5000
+@hosta = localhost
+@port = 7071
 
-### USING FUNCTION A PUT A MSG ON A QUEUE TO BE PICKED UP BY FUNCTION B
+### USING FUNCTION A PUT A MSG ON A QUEUE TO BE PICKED UP BY FUNCTION B - NO BAGGAGE
 @submissionid = {{$guid}}
-POST {{protocol}}://{{hosta}}/api/queue/{{submissionid}} HTTP/1.1
+POST {{protocol}}://{{hosta}}:{{port}}/api/queue/{{submissionid}} HTTP/1.1
+
 
 ### USING FUNCTION A PUT A MSG ON A QUEUE TO BE PICKED UP BY FUNCTION B - WITH BAGGAGE
 @submissionid = {{$guid}}
-POST {{protocol}}://{{hosta}}/api/queue-with-bagage/{{submissionid}} HTTP/1.1
+POST {{protocol}}://{{hosta}}:{{port}}/api/queue-with-bagage/{{submissionid}} HTTP/1.1

@@ -13,7 +13,7 @@ It does so by providing real working examples and associated instructions for a 
 
 ## Scenarios
 
-### **Scenario 1: Function A calling Function B over HTTP**
+### **Scenario A: Function A calling Function B over HTTP**
 
 Use either Function App A, or B with an HTTP invocation. The body of the function method then makes a GET call to an external url. 
 
@@ -98,11 +98,56 @@ This means that the dependency telemetry item's `Dependency Id` is set on the ou
 Please go into folder `./scenarios/scenario-a-function-a-to-function-b-over-http.http` and using the VS Code `REST Client` extension, run the scenario by clicking `Send Request`.
 
 
-### **Scenario 2a: Function A calling Function B over Azure Service Bus**
+### **Scenario B1: Function A calling Function B over Azure Service Bus**
 
 `Function A` enqueues a message to `Azure Service Bus`, which in turn gets picked up by `Function B`.
 
-TODO
+
+This message when it enters the queue will have metadata stamped on top of it, like this:
+
+![scenario-b-svcbus-msg-props](./images/scenario-b-svcbus-msg-props.png)
+
+As you can see, the `Diagnostic-Id` is the Service Bus equivalent of the `traceparent` header which is used with HTTP calls.  It allows the Service Bus SDK to flow the correlation context (`Operation Id` and `Dependency Id` of the caller) onto whoever will be receiving this message.
+
+For more information on how Azure Service Bus supports distributed correlation, [please see here](https://docs.microsoft.com/en-us/azure/service-bus-messaging/service-bus-end-to-end-tracing).
+
+Similar to scenario A, we'll see both a:
+
+- request telemetry for Function A
+- dependency telemetry for Function A
+
+Request telemetry for the function submitting the msg onto the queue:
+
+![scenario-b-appinsights-a-request-telemetry](./images/scenario-b-appinsights-a-request-telemetry.png)
+
+Dependency telemetry for the function submitting the msg onto the queue:
+
+![scenario-b-appinsights-a-dep-telemetry](./images/scenario-b-appinsights-a-dep-telemetry.png)
+
+Dependency telemetry for the function submitting the msg onto the queue:
+
+Note how:
+
+- the parent id on the dependency telemetry item is the same as the request id on the request telemetry item
+- the operation id is the same on the service bus message, the request telemetry item and the dependency telemetry item
+- the dependency id is the same on the service bus message and the dependency telemetry item
+
+When Function B picks up the message from Azure Service Bus, it in turn will generate telemetry on App Insights B.
+
+Request telemetry for the function picking up the message:
+
+![scenario-b-appinsights-b-request-telemetry](./images/scenario-b-appinsights-b-request-telemetry.png)
+
+Dependency telemetry for the function picking up the message:
+
+![scenario-b-appinsights-b-dep-telemetry](./images/scenario-b-appinsights-b-dep-telemetry.png)
+
+Note how the receiving function:
+
+- has its parent id on the request telemetry item equal to the dependency id of the calling function's dependency telemetry item
+- has its operation id the same as the calling function's operation id
+
+# TODO: REVISIT DOWN FROM HERE
 
 ### Stamping custom metadata on telemetry items (.NET Core)
 
