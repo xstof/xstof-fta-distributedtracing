@@ -1,11 +1,11 @@
-#@hosta = aicorr4-fn-a.azurewebsites.net
-#@port = 80
+@hosta = aicorr4-fn-a.azurewebsites.net
+@port = 443
 @contentType = application/json
-@protocol = http
+@protocol = https
 @submissionid = {{$guid}}
 
-@hosta = localhost
-@port = 7071
+#@hosta = localhost
+#@port = 7071
 
 ### USING FUNCTION A PUT A MSG ON A QUEUE TO BE PICKED UP BY FUNCTION B - NO BAGGAGE
 @submissionid = {{$guid}}
