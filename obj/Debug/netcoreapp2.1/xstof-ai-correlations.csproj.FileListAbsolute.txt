@@ -1,3 +1,0 @@
-c:\Users\begim\repos\xstof-fta-distributedtracing\obj\Debug\netcoreapp2.1\xstof-ai-correlations.csprojAssemblyReference.cache
-c:\Users\begim\repos\xstof-fta-distributedtracing\obj\Debug\netcoreapp2.1\xstof-ai-correlations.AssemblyInfoInputs.cache
-c:\Users\begim\repos\xstof-fta-distributedtracing\obj\Debug\netcoreapp2.1\xstof-ai-correlations.AssemblyInfo.cs
