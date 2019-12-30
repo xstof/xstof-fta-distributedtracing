@@ -89,7 +89,10 @@ namespace egconsole
 
         private TelemetryConfiguration GetAppInsightsConfig(string iKey){
             var config = TelemetryConfiguration.CreateDefault();
+            
             var module = new DependencyTrackingTelemetryModule();
+            module.IncludeDiagnosticSourceActivities.Add("Microsoft.Azure.ServiceBus");
+            module.IncludeDiagnosticSourceActivities.Add("Microsoft.Azure.EventHubs");
             module.ExcludeComponentCorrelationHttpHeadersOnDomains.Add("core.windows.net");
             module.Initialize(config);
 
