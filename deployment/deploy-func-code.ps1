@@ -97,11 +97,25 @@ if ( $checkExistingSub.name -eq $egsubname ) {
     az eventgrid event-subscription create --name $egsubname --source-resource-id "/subscriptions/$SubId/resourceGroups/$RG/providers/Microsoft.EventGrid/topics/$topicName" --endpoint $endpoint  --event-delivery-schema cloudeventschemav1_0
 }
 
+# EVENTHUB
+
+
+$aehNsName = $ResourcesPrefix + "-demons-aeh"
+$aehName = $ResourcesPrefix + "-demo-aeh"
+
+# < created by template >
+
+# CONFIG
+
 # write config for console app
 # e.g. {   "aegTopicUrl": "https://begim-egtopic-cs.westeurope-1.eventgrid.azure.net/api/events",   "aegTopicKey":"7dCVcy0te2hoXEb4lAc2UbUhEVL6RKgQPVqzEdDFqTA=" }
-$key= az eventgrid topic key list --name $topicName -g $RG --query "key1" --output tsv 
-$endpoint=    az eventgrid topic show --name $topicName -g $RG --query "endpoint" --output tsv
+$aegkey= az eventgrid topic key list --name $topicName -g $RG --query "key1" --output tsv 
+$aegendpoint=    az eventgrid topic show --name $topicName -g $RG --query "endpoint" --output tsv
+
+$aehKey=(az eventhubs namespace authorization-rule keys list --resource-group $RG --namespace-name $aehNsName --name RootManageSharedAccessKey | ConvertFrom-Json).primaryConnectionString
+
 az extension add --name application-insights
 $iKey = (az monitor app-insights component show --app "$ResourcesPrefix-egsubscriber-webapp-ai" -g $RG | ConvertFrom-Json).instrumentationKey
-$json="{ ""aegTopicUrl"": ""$endpoint"", ""aegTopicKey"": ""$key"" , ""iKey"": ""$iKey""}"
+
+$json="{ ""aegTopicUrl"": ""$aegendpoint"", ""aegTopicKey"": ""$aegkey"" , ""iKey"": ""$iKey"", ""aehName"":""$aehName"", ""aehConnectionString"":""$aehKey""}"
 $json | Out-File -FilePath ../src/egconsole/appsettings.json -Force

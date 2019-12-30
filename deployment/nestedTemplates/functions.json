@@ -63,6 +63,18 @@
           "description": "Name of the queue on Service Bus"
         }
       },
+      "eventHubConnectionString": {
+        "type": "string",
+        "metadata": {
+          "description": "Connection string for AEH"
+        }
+      },
+      "eventHubName": {
+        "type": "string",
+        "metadata": {
+          "description": "Name of the Event Hub"
+        }
+      },
       "httpBinIp": {
         "type": "string",
         "metadata": {
@@ -163,6 +175,14 @@
               {
                 "name": "FUNCTIONS_WORKER_RUNTIME",
                 "value": "[variables('functionWorkerRuntime')]"
+              },
+              {
+                "name": "EventHubConnection",
+                "value": "[parameters('eventHubConnectionString')]"
+              },
+              {
+                "name": "eventHubName",
+                "value": "[parameters('eventHubName')]"
               },
               {
                 "name": "ServiceBusConnection",

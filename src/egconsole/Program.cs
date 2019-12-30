@@ -12,6 +12,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Threading;
+using Microsoft.Azure.EventHubs;
 
 namespace egconsole
 {
@@ -45,20 +46,35 @@ namespace egconsole
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        var aegTopicUrl = _config.GetValue<string>("aegTopicUrl");
-        var aegTopicKey = _config.GetValue<string>("aegTopicKey");
+
+                // this could be handled by DI - doing it this way would be for a console app run outside of IHostedService
         var iKey = _config.GetValue<string>("iKey");
-
-        if ( string.IsNullOrEmpty(aegTopicUrl) || string.IsNullOrEmpty(aegTopicUrl)){
-            throw new Exception("The powershell to deploy the function code should have setup this console app appsettings file");
-        }
-
-        // this could be handled by DI - doing it this way would be for a console app run outside of IHostedService
         var config = GetAppInsightsConfig(iKey);
         _telemClient = new TelemetryClient(config);
 
-        RunConsoleApp(aegTopicUrl, aegTopicKey);
+        
+        // start root activity and record on it the custom activity tags/baggage
+        var rootActivity = new Activity("Console Root");
 
+        var submissionId = Guid.NewGuid().ToString();
+        Console.WriteLine($"Submission Id is {submissionId}");
+
+        rootActivity.AddTag("MyCustomCorrId", submissionId);
+        rootActivity.AddBaggage("MyCustomCorrId", submissionId);
+
+        // start req operation
+        var reqOp = _telemClient.StartOperation<RequestTelemetry>(rootActivity);
+
+        var t1=SendEventGridEvents(rootActivity, submissionId);
+        var t2 =SendEventHubEvents(rootActivity);
+
+        Task.WaitAll(t1,t2);
+
+        _telemClient.StopOperation(reqOp);  
+        
+        Console.WriteLine("Use CTRL+C to exit");
+
+                    
         return Task.CompletedTask;
     }
 
@@ -84,34 +100,57 @@ namespace egconsole
             return config;
         }
 
-        private async Task RunConsoleApp(string aegTopicUrl, string aegTopicKey)
+        private async Task SendEventHubEvents(Activity rootActivity)
         {
-            // start root activity and record on it the custom activity tags/baggage
-            var rootActivity = new Activity("Console Root");
+            var aehConnectionString = _config.GetValue<string>("aehConnectionString");
+            var aehName = _config.GetValue<string>("aehName");
 
-            var submissionId = Guid.NewGuid().ToString();
-            Console.WriteLine($"Submission Id is {submissionId}");
+            if ( string.IsNullOrEmpty(aehName) || string.IsNullOrEmpty(aehConnectionString)){
+                throw new Exception("The powershell to deploy the function code should have setup this console app appsettings file for AEH");
+            }
 
-            rootActivity.AddTag("MyCustomCorrId", submissionId);
-            rootActivity.AddBaggage("MyCustomCorrId", submissionId);
-            //rootActivity.Start();
+            var connectionStringBuilder = new EventHubsConnectionStringBuilder(aehConnectionString)
+            {
+                EntityPath = aehName
+            };
 
-            // start req operation
-            var reqOp = _telemClient.StartOperation<RequestTelemetry>(rootActivity);
-            //var operationId = reqOp.Telemetry.Id.Replace("|", "").Split('.')[0];
-            //var requestId = reqOp.Telemetry.Id.Replace("|", "").Split('.')[1];
-            
-            // start dep operation
-            // var dependencyOperation = _telemClient.StartOperation<DependencyTelemetry>($"EventGridDependency", operationId, requestId );
+            var eventHubClient = EventHubClient.CreateFromConnectionString(connectionStringBuilder.ToString());
 
-            // // write out custom activity tags/baggage
-            // var currActivity = Activity.Current;
-            
-            // var submissionId = Guid.NewGuid().ToString();
-            // Console.WriteLine($"Submission Id is {submissionId}");
+            await SendEventHubEvents(eventHubClient, 5);
 
-            // currActivity.AddTag("MyCustomCorrId", submissionId);
-            // currActivity.AddBaggage("MyCustomCorrId", submissionId);
+            await eventHubClient.CloseAsync();
+
+        }
+
+        private static async Task SendEventHubEvents(EventHubClient ehClient , int numMessagesToSend)
+        {
+            for (var i = 0; i < numMessagesToSend; i++)
+            {
+                try
+                {
+                    var message = $"Message {i}";
+                    Console.WriteLine($"Sending message: {message}");
+                    await ehClient.SendAsync(new EventData(System.Text.Encoding.UTF8.GetBytes(message)));
+                }
+                catch (Exception exception)
+                {
+                    Console.WriteLine($"{DateTime.Now} > Exception: {exception.Message}");
+                }
+
+                await Task.Delay(10);
+            }
+
+            Console.WriteLine($"{numMessagesToSend} AEH messages sent.");
+        }
+
+        private async Task SendEventGridEvents(Activity rootActivity, string submissionId)
+        {
+            var aegTopicUrl = _config.GetValue<string>("aegTopicUrl");
+            var aegTopicKey = _config.GetValue<string>("aegTopicKey");
+
+            if ( string.IsNullOrEmpty(aegTopicUrl) || string.IsNullOrEmpty(aegTopicUrl)){
+                throw new Exception("The powershell to deploy the function code should have setup this console app appsettings file for AEG");
+            }
 
             // raise event
             using (var httpClient = new HttpClient())
@@ -133,27 +172,16 @@ namespace egconsole
                 var httpRequest = new HttpRequestMessage(HttpMethod.Post,aegTopicUrl);
 
                 httpRequest.Content = new StringContent(JsonSerializer.Serialize(cloudEvent));
-                //httpRequest.Content.Headers.Add("Content-Type","application/cloudevents+json");
                 httpRequest.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/cloudevents+json");
                 // obtain the key for your AEG deployment
-
                 httpRequest.Headers.Add("aeg-sas-key",aegTopicKey);
 
                 var result =await httpClient.SendAsync(httpRequest);
 
-                //stop dep operation
-                //_telemClient.StopOperation(dependencyOperation);
-
                  _telemClient.TrackTrace($"Console App Closes EG publish {result.StatusCode}");
             }
   
-            // stop req operation
-            _telemClient.StopOperation(reqOp);
-           _telemClient.Flush();
-            
-            //rootActivity.Stop();
-
-            Console.WriteLine("Event Submitted! Use CTRL+C to exit");
+            Console.WriteLine("Event Grid Event(s) Submitted!");
   
         }
     }

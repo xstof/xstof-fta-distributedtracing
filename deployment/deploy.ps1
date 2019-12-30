@@ -70,6 +70,7 @@ az storage container create -n $NestedTemplatesStorageContainerName --account-na
 Write-Output "Uploading nested template to container"
 az storage blob upload-batch --account-name $StorageAccountNameForNestedTemplates -d $NestedTemplatesStorageContainerName -s "./nestedTemplates" --pattern "functions.json"
 az storage blob upload-batch --account-name $StorageAccountNameForNestedTemplates -d $NestedTemplatesStorageContainerName -s "./nestedTemplates" --pattern "service-bus-queue.json"
+az storage blob upload-batch --account-name $StorageAccountNameForNestedTemplates -d $NestedTemplatesStorageContainerName -s "./nestedTemplates" --pattern "aeh.json"
 az storage blob upload-batch --account-name $StorageAccountNameForNestedTemplates -d $NestedTemplatesStorageContainerName -s "./nestedTemplates" --pattern "workbook-tmp.json"
 az storage blob upload-batch --account-name $StorageAccountNameForNestedTemplates -d $NestedTemplatesStorageContainerName -s "./nestedTemplates" --pattern "container-instance.json"
 az storage blob upload-batch --account-name $StorageAccountNameForNestedTemplates -d $NestedTemplatesStorageContainerName -s "../src/LogicAppA" --pattern "*.definition.json"
@@ -87,5 +88,6 @@ $NestedTemplatesLocation = "https://$StorageAccountNameForNestedTemplates.blob.c
 $templateFile = "deploy.json"
 
 az group deployment create -n "appinsights-corrtest-deployment" -g $RG --template-file "$templateFile" --parameters _artifactsLocation=$NestedTemplatesLocation _artifactsLocationSasToken=$SasTokenForNestedTemplates resourcesPrefix=$ResourcesPrefix
+
 
 write-host "Information: Run deploy-func-code.ps1 to deploy function app code" -ForegroundColor Green

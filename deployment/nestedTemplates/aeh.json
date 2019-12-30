@@ -1,0 +1,57 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "aeh-Namespace": {
+        "type": "string",
+        "metadata": {
+          "description": "Name of the AEH namespace"
+        }
+      },
+      "aeh-Name": {
+        "type": "string",
+        "metadata": {
+          "description": "Name of the AEH"
+        }
+      }
+    },
+    "variables": {
+      "apiVersion": "2017-04-01"
+    },
+    "resources": [
+        {
+        "apiVersion": "2017-04-01",
+        "type": "Microsoft.EventHub/namespaces",
+        "name": "[parameters('aeh-Namespace')]",
+        "location": "[resourceGroup().location]",
+        "sku": {
+            "name": "Basic",
+            "tier": "Basic",
+            "capacity": 1
+        },
+        "properties": {
+            "isAutoInflateEnabled": false,
+            "maximumThroughputUnits": 0
+            }
+        },
+        {
+        "apiVersion": "2017-04-01",
+        "type": "Microsoft.EventHub/namespaces/eventhubs",
+        "name": "[concat(parameters('aeh-Namespace'), '/', parameters('aeh-Name'))]",
+        "location": "[resourceGroup().location]",
+        "dependsOn": [
+            "[resourceId('Microsoft.EventHub/namespaces', parameters('aeh-Namespace'))]"
+        ],
+        "properties": {
+            "messageRetentionInDays": 1,
+            "partitionCount": 1
+            }
+        }
+    ],
+    "outputs": {
+      "NamespaceConnectionString": {
+        "type": "string",
+        "value": "[listkeys(resourceId('Microsoft.EventHub/namespaces/authorizationRules', parameters('aeh-Namespace'),'RootManageSharedAccessKey'), variables('apiVersion')).primaryConnectionString]"
+      }
+    }
+  }

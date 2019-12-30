@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Microsoft.Azure.ServiceBus;
+using Microsoft.Azure.EventHubs;
 using System.Text;
 using System.Diagnostics;
 using System.Net.Http;
@@ -192,6 +193,12 @@ namespace FTA.AICorrelation
             log.LogInformation(eventGridEvent.Data.ToString());
 
             DumpActivity(Activity.Current, log);
+        }
+
+        [FunctionName("ConsumeEventHubEvent")]
+        public static void Run([EventHubTrigger("%eventHubName%", Connection = "EventHubConnection")] string myEventHubMessage, ILogger log)
+        {
+            log.LogInformation($"C# function triggered to process a message: {myEventHubMessage}");
         }
         
         private void DumpActivity(Activity act, ILogger log)
