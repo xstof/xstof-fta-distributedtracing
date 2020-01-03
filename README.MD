@@ -332,8 +332,138 @@ Here's how the custom AI dependency was written, note this is from the event tra
 var op = _telemClient.StartOperation<RequestTelemetry>($"HandleCloudEvent {AEGSubscriptionName}", details.TraceParent.Split('-')[1], details.TraceParent.Split('-')[2]);
 ~~~
 
+### Scenario X Application to Event Hub
 
-### << begim TO EDIT below this point >>
+The dependency collector "Microsoft.ApplicationInsights.DependencyCollector" component is used to collect remote dependency calls and log them as dependency telemetry items.
+
+> Note: Refer to the documentation [here](]https://docs.microsoft.com/en-us/azure/azure-monitor/app/asp-net-dependencies)
+
+The 3 methods used to collect
+
+ - Status monitor / instrumentation profiler (e.g. parsing dotnet runtime diagnostic information)
+ - Subscriber to EventSource (ETW) events. Useful in scenarios where there's information required from dependencies not in the current process
+ - DiagnosticSource - for in process events [see here for more information](https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md)
+
+#### Sending ASPNET
+
+All configuration, including dependency tracking is handled through the services configuration for Application Insights.
+
+~~~cs
+  public void ConfigureServices (IServiceCollection services) {
+      ...
+      services.AddApplicationInsightsTelemetry();
+      ...
+  }
+~~~
+
+#### Sending DOT NET Console
+
+The DependencyCollector package has to be added and initialized correctly
+
+~~~cs
+        private TelemetryConfiguration GetAppInsightsConfig(string iKey){
+            var config = TelemetryConfiguration.CreateDefault();
+            
+            var module = new DependencyTrackingTelemetryModule();
+            module.IncludeDiagnosticSourceActivities.Add("Microsoft.Azure.ServiceBus");
+            module.IncludeDiagnosticSourceActivities.Add("Microsoft.Azure.EventHubs");
+            module.ExcludeComponentCorrelationHttpHeadersOnDomains.Add("core.windows.net");
+            module.Initialize(config);
+
+            config.InstrumentationKey = iKey;
+
+            config.TelemetryInitializers.Add(new HttpDependenciesParsingTelemetryInitializer());
+
+            return config;
+        }
+~~~
+
+> Note ServiceBus dependency tracking is also added above
+
+#### Sending Azure Function
+
+The Event Hub function binding and functions runtime ensure the correct dependency data is written to Application Insights, where Application Insights is configured.
+
+#### How does it work?
+
+When the EventHub-events are sent via your programme code to the EventHub via the EventHub SDK. The EventHub SDK registers a unique DiagnosticSource "Microsoft.Azure.EventHubs" which is then used as a conduit for diagnostic data attached to the current System Diagnostic Activity scope.
+E.g. from the [EventHubs SDK](https://github.com/Azure/azure-sdk-for-net/blob/master/sdk/eventhub/Microsoft.Azure.EventHubs/src/EventHubsDiagnosticSource.cs)
+~~~cs
+  internal static Activity StartSendActivity(string clientId, EventHubsConnectionStringBuilder csb, string partitionKey, IEnumerable<EventData> eventDatas, int count)
+  {
+      ...
+      Activity activity = new Activity(SendActivityName);
+
+      activity.AddTag("peer.hostname", csb.Endpoint.Host);
+      activity.AddTag("eh.event_hub_name", csb.EntityPath);
+      activity.AddTag("eh.partition_key", partitionKey);
+      activity.AddTag("eh.event_count", count.ToString());
+      activity.AddTag("eh.client_id", clientId);
+
+      // in many cases activity start event is not interesting, 
+      // in that case start activity without firing event
+      if (DiagnosticListener.IsEnabled(SendActivityStartName))
+      {
+          DiagnosticListener.StartActivity(activity,
+              new
+              {
+                  csb.Endpoint,
+                  Entity = csb.EntityPath,
+                  PartitionKey = partitionKey,
+                  EventDatas = eventDatas
+              });
+      }
+      ...
+  }
+~~~
+
+In the Application Insights SDK a specific DiagnosticSource listener is subscribed to (sink added) to filter to and collect the AEH SDK diagnostic-events. [REF the Application Insights SDK](https://github.com/microsoft/ApplicationInsights-dotnet/blob/20cf6bbf7224345934c71d9d703558df32463a85/WEB/Src/DependencyCollector/Shared/Implementation/EventHandlers/EventHubsDiagnosticsEventHandler.cs). And further filtered via the Event Key.
+
+~~~cs
+    public override void OnEvent(KeyValuePair<string, object> evnt, DiagnosticListener ignored)
+    {
+        Activity currentActivity = Activity.Current;
+
+        switch (evnt.Key)
+        {
+            case "Microsoft.Azure.EventHubs.Send.Start":
+            case "Microsoft.Azure.EventHubs.Receive.Start":
+            case "Send.Start":
+            case "Receive.Start":
+                break;
+            case "Microsoft.Azure.EventHubs.Send.Stop":
+            case "Microsoft.Azure.EventHubs.Receive.Stop":
+            case "Send.Stop":
+            case "Receive.Stop":
+                this.OnDependency(evnt.Key, evnt.Value, currentActivity);
+                break;
+        }
+    }
+~~~
+
+A dependency telemetry item is added from the OnDependency() method call based on the parsed diagnostic-event data.
+
+When seen from the End-to-end transaction view the sender of AEH events is represented with a Request Telemetry item and each call through the AEH SDK to publish an AEH event is represented by a AI dependency Telemetry item.
+
+In this example 5 AEH events are published from a Net Core console application. The same console app also makes a call to EventGrid.
+
+![aeh-publish-ai-telemetry](./images/aeh-publish-ai-telemetry.png)
+
+> Note the Operation Id of the Request Telemetry Item is transferred with each of the AEH Events (through Event Hub) along with any context (Activity Baggage).
+> As in previous examples each dependency item "parent id" property field has the request telemetry "request id" value.
+
+#### Receiver
+
+In this example our Function App A is receiving (subscribing) to the Event Hub events and sending to it's own Application Insights Resource.
+Opening that resource and searching AI Telemetry with the sender operation Id yields the related telemetry for the subscriber.
+
+> Note that in this case there's a function invocation per AEH event received.
+
+![aeh-subscribe-ai-telemetry](./images/aeh-subscribe-ai-telemetry.png)
+
+Any "baggage" added will also flow through EventHubs appearing as custom properties on the related subscriber telemtery items. This is because EventHubs supports the transfer of Application Insights (standard) correlation identifiers and context data through the AEH SDK (in a similar way to Service Bus).
+
+### << TO EDIT below this point >>
 
 Fn A -> Service Bus -> Fn B (with custom code to correlate across workspaces using a custom correlation id)
 
