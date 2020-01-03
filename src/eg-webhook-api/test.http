@@ -1,3 +1,12 @@
+
+### send AEH local (test depends being generated from SDK)
+POST http://localhost:5000/api/aehdemosend
+
+### send remote AEH test
+POST https://bjg1975-egsubscriber-webapp.azurewebsites.net/api/aehdemosend
+
+### send local
+
 POST http://localhost:5000/api/egwebhook
 Content-Type: application/cloudevents+json
 aeg-event-type: Notification

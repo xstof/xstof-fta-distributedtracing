@@ -10,6 +10,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.ApplicationInsights;
+using Microsoft.ApplicationInsights.DependencyCollector;
+using Microsoft .ApplicationInsights.Extensibility;
+//using Microsoft.ApplicationInsights.Extensibility.HostingStartup;
 
 
 namespace eg_webhook_api {
@@ -25,6 +29,18 @@ namespace eg_webhook_api {
             services.AddControllers ();
             services.AddApplicationInsightsTelemetry ();
             services.AddHttpClient();
+
+            //services.ConfigureTelemetryModule<DependencyTrackingTelemetryModule>((module, o) =>
+            //        {
+            //            module.IncludeDiagnosticSourceActivities.Add("Microsoft.Azure.EventHubs");
+            //        });
+
+            //services.AddSingleton<ITelemetryModule, FileDiagnosticsTelemetryModule>();
+            //services.ConfigureTelemetryModule<FileDiagnosticsTelemetryModule>( (module, options) => {
+            //    module.LogFilePath = @"C:\AISDKLOGS";
+            //    module.LogFileName = "LOGS.txt";
+            //    module.Severity = "Verbose";
+            //} );
            
         }
 
