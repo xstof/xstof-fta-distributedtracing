@@ -15,7 +15,7 @@ It does so by providing real working examples and associated instructions for a 
 
 ### **Scenario A: Function A calling Function B over HTTP**
 
-Use either Function App A, or B with an HTTP invocation. The body of the function method then makes a GET call to an external url. 
+Call into Function App A which in turn will call Function B over HTTP. In Function B, the body of the function method makes a GET call to an external url. 
 
 > In the correlation playground setup by the ARM template this external url is a Azure Container Instance hosting a version of [`anyproxy`](https://github.com/alibaba/anyproxy) which serves as a proxy returning a static HTTP 200 response while logging the request.  This allows us to observe the additional HTTP headers added for the purposes of correlation, by the App Insights SDK, to the outgoing HTTP call from the Azure function.
 > In order to observe the call being made towards anyproxy, find the ip address for the ACI instance (Example: `51.124.59.80`) and visit it on port `8002`, like this: `http://51.124.59.80:8002`.  
@@ -160,7 +160,7 @@ Please go into folder `./scenarios/scenario-b-function-a-to-function-b-over-svcb
 
 Before moving on to scenario 2b, this section explains in more detail how custom metadata can be flown through the telemetry using .NET Core.
 
-#### Introducing the Activity Framework
+### **Introducing the Activity Framework**
 .NET Core features a very consistent way to model how logical "activities" call each other in sequential and hierarchical ways.  By means of the [`System.Diagnostics.Activity`](https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.activity?view=netcore-3.1) framework .NET code keeps track of the currently executing activity.  The currently executing `Activity` can be accessed through `Activity.Current` and provides the logging framework with the context required to log information with all the metadata which one would expect:
 - an activity has a unique identifier
 - an activity knows about it's parent activity
@@ -180,7 +180,7 @@ For more guidance on how to use the `Activity` framework, please see the [Activi
 
 Building onto the previous sample, now we will be using a `SubmissionId` when we call into Function A.  (This is an identifier passed as a parameter on the url when calling Function A.) This `SubmissionId`, which in the sample scenario is a guid, represents an identifier for the function activity. An example might be a shopping-cart-Id for an Azure function that performs stock check availability for an e-commerce application shopping cart.  In general the `SubmissionId` in the sample represents a meaningful identifier to the business upon which telemetry can be filtered upon later in the process.
 
-The function logs the Submission Id, adds it to the payload of the Service Bus Queue Message which will be output and finally tracks it against the Application Insights Request telemetry.  When Function B receives the message, it will see the `SubmissionId` and will record that, just like Function A, as custom properties on on the App Insights telemetry items.
+The function logs the Submission Id, adds it to the payload of the Service Bus Queue Message which will be output and finally tracks it against the Application Insights Request telemetry.  When Function B receives the message, it will see the `SubmissionId` and will record that, just like Function A, as a custom property on on its App Insights telemetry items.
 
 #### Recording custom context on a function invocation's telemetry
 
@@ -230,7 +230,7 @@ Now that we know how to add custom correlation context to our telemetry, we can 
 | where  MyCustomCorrId == "b5ee9818-080c-49ab-894a-c9eb3490ed1a"
 ~~~
 
-The "app()" keyword allows you to union and join data across workspaces, [see the documentation for this](https://docs.microsoft.com/en-us/azure/azure-monitor/log-query/cross-workspace-query#identifying-an-application).  
+When we want to extend our search across multiple workspaces (distinct App Insights resources) we can do this as well using the "app()" keyword which allows one to union and join data across workspaces, [see the documentation for this](https://docs.microsoft.com/en-us/azure/azure-monitor/log-query/cross-workspace-query#identifying-an-application).  
 
 > Note The LA workspace behind App Insights has not historically been exactly the same as the run-of-the-mill LA workspace you create. See [here](https://docs.microsoft.com/en-us/azure/azure-monitor/log-query/unify-app-resource-data#application-insights-and-log-analytics-workspace-schema-differences) for more info.
 
@@ -249,8 +249,6 @@ allApps
 ~~~
 
 ![kusto-correlate-on-custom-corr-id](./images/kusto-correlate-on-custom-corr-id.png)
-
-
 
 
 # TODO: REVISIT DOWN FROM HERE

@@ -1,5 +1,5 @@
-@hosta = aicorr4-fn-a.azurewebsites.net
-@hostb = aicorr4-fn-b.azurewebsites.net
+@hosta = aicorr5-fn-a.azurewebsites.net
+@hostb = aicorr5-fn-b.azurewebsites.net
 @contentType = application/json
 @protocol = https
 @submissionid = {{$guid}}

@@ -1,4 +1,4 @@
-@hosta = aicorr4-fn-a.azurewebsites.net
+@hosta = aicorr5-fn-a.azurewebsites.net
 @contentType = application/json
 @protocol = https
 @submissionid = {{$guid}}
