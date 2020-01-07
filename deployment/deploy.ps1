@@ -38,6 +38,7 @@ if ( $storAccountStatus.nameAvailable -eq $true )
     exit
 }
 
+# TODO: still needed ???
 #fixup workbook references
 $azsubscription= az account show | ConvertFrom-Json
 $SubId = $azsubscription.Id
@@ -72,6 +73,8 @@ az storage blob upload-batch --account-name $StorageAccountNameForNestedTemplate
 az storage blob upload-batch --account-name $StorageAccountNameForNestedTemplates -d $NestedTemplatesStorageContainerName -s "./nestedTemplates" --pattern "service-bus-queue.json"
 az storage blob upload-batch --account-name $StorageAccountNameForNestedTemplates -d $NestedTemplatesStorageContainerName -s "./nestedTemplates" --pattern "aeh.json"
 az storage blob upload-batch --account-name $StorageAccountNameForNestedTemplates -d $NestedTemplatesStorageContainerName -s "./nestedTemplates" --pattern "workbook-tmp.json"
+az storage blob upload-batch --account-name $StorageAccountNameForNestedTemplates -d $NestedTemplatesStorageContainerName -s "./nestedTemplates" --pattern "workbook.json"
+az storage blob upload-batch --account-name $StorageAccountNameForNestedTemplates -d $NestedTemplatesStorageContainerName -s "./nestedTemplates" --pattern "workbook-scenario-a.json"
 az storage blob upload-batch --account-name $StorageAccountNameForNestedTemplates -d $NestedTemplatesStorageContainerName -s "./nestedTemplates" --pattern "container-instance.json"
 az storage blob upload-batch --account-name $StorageAccountNameForNestedTemplates -d $NestedTemplatesStorageContainerName -s "../src/LogicAppA" --pattern "*.definition.json"
 Write-Output "Templates uploaded"

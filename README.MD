@@ -255,7 +255,15 @@ allApps
 
 ### **Scenario C: Logic Apps Receiving inbound call from Function A and calling Function B in turn**
 
-TODO
+In this scenario, `Function A` calls into a `Logic App` over HTTP, which in turns calls `Function B` over HTTP.
+
+We'd like to make sure to capture this in an end-to-end treeview where we see all components, each Logic App Action and each system a Logic App Action calls into.
+
+By default
+
+#### How to run this scenario yourself
+
+Please go into folder `./scenarios/scenario-c-function-a-to-logicapp-to-function-b-over-http.http` and using the VS Code `REST Client` extension, run the scenario by clicking `Send Request` on the GET item.
 
 ### **Scenario E: Event Grid**
 
