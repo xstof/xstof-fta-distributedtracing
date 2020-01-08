@@ -37,6 +37,7 @@
         "logAnalyticsWorkbookDisplayNameScenarioA": "Scenario-A",
         "logAnalyticsWorkbookDisplayNameScenarioB1": "Scenario-B1",
         "logAnalyticsWorkbookDisplayNameScenarioB2": "Scenario-B2",
+        "logAnalyticsWorkbookDisplayNameScenarioCandD": "Scenario-C-and-D",
         "serviceBusConnection": "[concat(parameters('resourcesPrefix'), '-', 'svcbusconnection')]",
         "eventHubNamespaceName" :"[concat(parameters('resourcesPrefix'), '-', 'demons-aeh')]",
         "eventHubName": "[concat(parameters('resourcesPrefix'), '-', 'demo-aeh')]"
@@ -305,6 +306,29 @@
                     },
                     "workbookDisplayName": {
                         "value": "[variables('logAnalyticsWorkbookDisplayNameScenarioB2')]"
+                    }
+                }
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logicAppsLAWorkspace'))]"
+            ]
+        },
+        {
+            "name": "nested-loganalytics-workbook-scenario-c-and-d",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2016-09-01",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/nestedtemplates/workbook-scenario-c-and-d.json?', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "workbookSourceId": {
+                        "value": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logicAppsLAWorkspace'))]"
+                    },
+                    "workbookDisplayName": {
+                        "value": "[variables('logAnalyticsWorkbookDisplayNameScenarioCandD')]"
                     }
                 }
             },
