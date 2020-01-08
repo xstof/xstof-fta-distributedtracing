@@ -39,12 +39,12 @@ if ( $storAccountStatus.nameAvailable -eq $true )
 }
 
 # TODO: still needed ???
-#fixup workbook references
-$azsubscription= az account show | ConvertFrom-Json
-$SubId = $azsubscription.Id
-$workbookpath = ".\nestedTemplates\workbook.json"
-$modifiedworkbookpath = ".\nestedTemplates\workbook-tmp.json"
-Copy-Item -Path $workbookpath -Destination $modifiedworkbookpath -Force
+# fixup workbook references
+# $azsubscription= az account show | ConvertFrom-Json
+# $SubId = $azsubscription.Id
+# $workbookpath = ".\nestedTemplates\workbook.json"
+# $modifiedworkbookpath = ".\nestedTemplates\workbook-tmp.json"
+# Copy-Item -Path $workbookpath -Destination $modifiedworkbookpath -Force
 
 #(Get-Content -path $modifiedworkbookpath -Raw) -replace `
 #"/subscriptions/651dc44c-5d8e-48da-8cd3-cd79224ac290" ,"/subscriptions/$SubId" | Set-Content -Path $modifiedworkbookpath
@@ -75,11 +75,14 @@ az storage blob upload-batch --account-name $StorageAccountNameForNestedTemplate
 az storage blob upload-batch --account-name $StorageAccountNameForNestedTemplates -d $NestedTemplatesStorageContainerName -s "./nestedTemplates" --pattern "workbook-tmp.json"
 az storage blob upload-batch --account-name $StorageAccountNameForNestedTemplates -d $NestedTemplatesStorageContainerName -s "./nestedTemplates" --pattern "workbook.json"
 az storage blob upload-batch --account-name $StorageAccountNameForNestedTemplates -d $NestedTemplatesStorageContainerName -s "./nestedTemplates" --pattern "workbook-scenario-a.json"
+az storage blob upload-batch --account-name $StorageAccountNameForNestedTemplates -d $NestedTemplatesStorageContainerName -s "./nestedTemplates" --pattern "workbook-scenario-b1.json"
+az storage blob upload-batch --account-name $StorageAccountNameForNestedTemplates -d $NestedTemplatesStorageContainerName -s "./nestedTemplates" --pattern "workbook-scenario-b2.json"
 az storage blob upload-batch --account-name $StorageAccountNameForNestedTemplates -d $NestedTemplatesStorageContainerName -s "./nestedTemplates" --pattern "container-instance.json"
 az storage blob upload-batch --account-name $StorageAccountNameForNestedTemplates -d $NestedTemplatesStorageContainerName -s "../src/LogicAppA" --pattern "*.definition.json"
 Write-Output "Templates uploaded"
 
-remove-item $modifiedworkbookpath
+# TODO: still needed?
+# remove-item $modifiedworkbookpath
 
 # create sas token
 $SasTokenForNestedTemplates = az storage container generate-sas --account-name $StorageAccountNameForNestedTemplates -n $NestedTemplatesStorageContainerName  --permissions r --expiry (Get-Date).AddMinutes(180).ToString("yyyy-MM-dTH:mZ")
