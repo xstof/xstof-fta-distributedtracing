@@ -23,7 +23,7 @@
     },
     "workbookId": {
       "type": "string",
-      "defaultValue": "2be000cf-9391-40eb-9b18-fb1824bcd1a7",
+      "defaultValue": "f0fda2b9-dda2-4328-9b8e-166e3457c45b",
       "metadata": {
         "description": "The unique guid for this workbook instance"
       }

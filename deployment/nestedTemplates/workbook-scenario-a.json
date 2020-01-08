@@ -24,7 +24,7 @@
       },
       "workbookId": {
         "type": "string",
-        "defaultValue": "[newGuid()]",
+        "defaultValue": "c1855999-f9a0-4255-9b56-67d33c652a26",
         "metadata": {
           "description": "The unique guid for this workbook instance"
         }
