@@ -1,0 +1,12 @@
+@port = 7071
+@proto = http
+@host = 127.0.0.1
+
+# @name startOrchestration
+GET {{proto}}://{{host}}:{{port}}/api/MyOrchestrator_HttpStart?name=Joseph
+
+###
+
+@statusQueryUrl = {{startOrchestration.response.body.statusQueryGetUri }}
+# @name getStatusFromOrchestration
+GET {{statusQueryUrl}}
