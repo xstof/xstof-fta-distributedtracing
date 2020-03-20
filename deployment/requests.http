@@ -1,5 +1,5 @@
-@hostnamea = aicorr4-fn-a.azurewebsites.net
-@hostnameb = aicorr4-fn-b.azurewebsites.net
+@hostnamea = begim1975-fn-a.azurewebsites.net
+@hostnameb = begim1975-fn-b.azurewebsites.net
 ## if needed declare host and port e.g. localhost:8080
 @hosta = {{hostnamea}}
 @hostb = {{hostnameb}}
@@ -39,7 +39,7 @@ content-type: application/json
 
 {
     "logicAppAction": "callIntoUrl",
-    "url": "http://requestbin.net/r/1nvwpun1"
+    "url": "https://ennpavzrcxv3.x.pipedream.net"
 }
 
 ### USING FUNCTION A CALL LOGIC APP A WITH BAGGAGE AND CONTENT; LOGIC APP TO CALL INTO A FUNCTION

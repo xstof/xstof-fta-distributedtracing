@@ -91,7 +91,7 @@ namespace FTA.AICorrelation
             Activity currActivity = Activity.Current;
 
             currActivity.AddTag("MyCustomCorrId", submissionId);
-            currActivity.AddBaggage("MyCustomCorrId", submissionId);
+            currActivity.AddBaggage("MyBaggage", submissionId);
 
             // currActivity.AddTag("MySubmissionId", submissionId);
 
@@ -130,7 +130,7 @@ namespace FTA.AICorrelation
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             dynamic data = JsonConvert.DeserializeObject(requestBody);
  
-            // Activity.Current.AddBaggage("MyCustomCorrIdInBAGGAGE", "baggagevalue");
+            // Activity.Current.AddBaggage("MyBaggage", "baggagevalue");
 
             DumpActivity(Activity.Current, log);
             
@@ -152,7 +152,7 @@ namespace FTA.AICorrelation
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             dynamic data = JsonConvert.DeserializeObject(requestBody);
  
-            Activity.Current.AddBaggage("MyCustomCorrId", "baggagevalue");
+            Activity.Current.AddBaggage("MyBaggage", "baggagevalue");
 
             DumpActivity(Activity.Current, log);
             
@@ -174,7 +174,7 @@ namespace FTA.AICorrelation
             dynamic data = JsonConvert.DeserializeObject(requestBody);
  
             Activity.Current.AddTag("MyCustomCorrId", submissionId);
-            Activity.Current.AddBaggage("MyCustomCorrId", submissionId);
+            Activity.Current.AddBaggage("MyBaggage", submissionId);
             Activity.Current.AddBaggage("SomethingElse", "test123");
 
             DumpActivity(Activity.Current, log);

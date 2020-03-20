@@ -60,7 +60,7 @@ namespace egconsole
         Console.WriteLine($"Submission Id is {submissionId}");
 
         rootActivity.AddTag("MyCustomCorrId", submissionId);
-        rootActivity.AddBaggage("MyCustomCorrId", submissionId);
+        rootActivity.AddBaggage("MyBaggage", submissionId);
 
         // start req operation
         var reqOp = _telemClient.StartOperation<RequestTelemetry>(rootActivity);
@@ -168,7 +168,7 @@ namespace egconsole
                     DataContentType = "application/json",
                     Data=null,
                     TraceParent = Activity.Current.Id,   // <= check this out :-)
-                    TraceState=$"MyCustomCorrId={submissionId}"
+                    TraceState=$"MyBaggage={submissionId}"
                 };
                 Console.WriteLine(cloudEvent.TraceParent);
 

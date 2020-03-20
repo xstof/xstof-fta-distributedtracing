@@ -28,10 +28,28 @@ The interesting properties that appear as headers on the outbound HTTP call from
 | Header                   | Value                                                       | Comment                                          |
 | ------------             | -----------------------------------                         | ------------------------------------             |
 | **TraceParent**          | **00-82f645b4d9b3884dba25016062a4652b-5ff3aa304adc3449-00** | is the new W3C trace context                     |
+| **TraceState** | comma delimited key=value string "key=value,key1=value1" | is the new W3C trace context header |
 | **Request-Id**           | **\|82f645b4d9b3884dba25016062a4652b.5ff3aa304adc3449.**    | is the older "request-id" mechanism              |
 | **Request-Context**      | **appId=cid-v1:6b06625e-3d1f-4bb4-8b50-b22b20b5a6d6**       | represents the app id for App Insights A         |
 | X-Request-Id             | c39043fc-5693-4ca6-ba3c-56cf059acbad                        | NOT important to the discussion - IGNORE THIS    |
 
+> TraceParent example [see w3c ref and examples here](https://www.w3.org/TR/trace-context)
+
+Valid traceparent when caller sampled this request:
+
+Value = 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01  
+base16(version) = 00  
+base16(trace-id) = 4bf92f3577b34da6a3ce929d0e0e4736  
+base16(parent-id) = 00f067aa0ba902b7  
+base16(trace-flags) = 01  // sampled  
+
+Valid traceparent when caller didn’t sample this request:  
+Value = 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-00  
+base16(version) = 00  
+base16(trace-id) = 4bf92f3577b34da6a3ce929d0e0e4736  
+base16(parent-id) = 00f067aa0ba902b7  
+base16(trace-flags) = 00  // not sampled  
+  
 > Note: `X-Request-Id` is an older concept, originally intended to flow custom correlation id between client and server for HTTP calls.  It is not important to the discussion here.  Please ignore.
 >
 > An Application Id value is also returned in the response header `Request-Context` to caller.  None of this is unique to Azure Functions.
