@@ -13,6 +13,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Threading;
 using Microsoft.Azure.EventHubs;
+using System.Collections.Generic;
 
 namespace egconsole
 {
@@ -52,6 +53,10 @@ namespace egconsole
         var config = GetAppInsightsConfig(iKey);
         _telemClient = new TelemetryClient(config);
 
+        // force request-id
+        //Activity.DefaultIdFormat = ActivityIdFormat.Hierarchical;
+        //Activity.ForceDefaultIdFormat = true;
+
         
         // start root activity and record on it the custom activity tags/baggage
         var rootActivity = new Activity("Console Root");
@@ -61,12 +66,14 @@ namespace egconsole
 
         rootActivity.AddTag("MyCustomCorrId", submissionId);
         rootActivity.AddBaggage("MyBaggage", submissionId);
+        rootActivity.AddBaggage("myotherbag","value");
 
         // start req operation
         var reqOp = _telemClient.StartOperation<RequestTelemetry>(rootActivity);
 
         var t1=SendEventGridEvents(rootActivity, submissionId);
         var t2 =SendEventHubEvents(rootActivity);
+  
 
         Task.WaitAll(t1,t2);
 
@@ -77,6 +84,8 @@ namespace egconsole
                     
         return Task.CompletedTask;
     }
+
+
 
     public Task StopAsync(CancellationToken cancellationToken)
     {

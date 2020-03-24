@@ -1,5 +1,5 @@
-@hostnamea = begim1975-fn-a.azurewebsites.net
-@hostnameb = begim1975-fn-b.azurewebsites.net
+@hostnamea = begim1976-fn-a.azurewebsites.net
+@hostnameb = begim1976-fn-b.azurewebsites.net
 ## if needed declare host and port e.g. localhost:8080
 @hosta = {{hostnamea}}
 @hostb = {{hostnameb}}

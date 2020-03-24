@@ -15,6 +15,8 @@ using System.Text;
 using System.Diagnostics;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Collections.Generic;
+using System.Globalization;
 
 namespace FTA.AICorrelation
 {
@@ -182,10 +184,28 @@ namespace FTA.AICorrelation
             // call Logic App A - pass on the body content of what came in
             var objectContent = new StringContent(requestBody);
             objectContent.Headers.ContentType = MediaTypeHeaderValue.Parse("application/json");
+
+            string s="";
+            foreach (KeyValuePair<string, string> bag in Activity.Current.Baggage)
+            {
+                s+=$"{bag.Key}={bag.Value},";
+            }
+            s = s.TrimEnd(',');
+
+            objectContent.Headers.Add("tracestate",s);
+
+            // correct way to do this here https://github.com/microsoft/ApplicationInsights-dotnet/blob/develop/BASE/src/Microsoft.ApplicationInsights/Extensibility/W3C/W3CUtilities.cs
+            // code copied here from AI repo to give an indication of complexity - e.g recreating raw HTTP requests in logicappscd..
+            // follow GenerateSpanId .... :)
+            var clientIdRequestId =GenerateSpanId() ;
+
+
+            objectContent.Headers.Add("x-ms-client-tracking-id",clientIdRequestId);
             await _httpClient.PostAsync(_logicAppAUrl, objectContent);
 
             return (ActionResult)new OkObjectResult($"");
         }
+
 
         [FunctionName("ConsunmeEventGridEvent")]
         public void EventGridTest([EventGridTrigger]EventGridEvent eventGridEvent, ILogger log)
@@ -218,6 +238,41 @@ namespace FTA.AICorrelation
 
             Console.WriteLine(sb.ToString());
             log.LogInformation(sb.ToString());
+        }
+
+        
+         private static readonly uint[] Lookup32 = CreateLookup32();
+        internal static string GenerateSpanId()
+        {
+            return GenerateId(BitConverter.GetBytes(WeakConcurrentRandom.Instance.Next()), 0, 8);
+        }
+
+        private static string GenerateId(byte[] bytes, int start, int length)
+        {
+            // See https://stackoverflow.com/questions/311165/how-do-you-convert-a-byte-array-to-a-hexadecimal-string-and-vice-versa/24343727#24343727
+            var result = new char[length * 2];
+            for (int i = start; i < start + length; i++)
+            {
+                var val = Lookup32[bytes[i]];
+                result[2 * i] = (char)val;
+                result[(2 * i) + 1] = (char)(val >> 16);
+            }
+
+            return new string(result);
+        }
+
+
+        private static uint[] CreateLookup32()
+        {
+            // See https://stackoverflow.com/questions/311165/how-do-you-convert-a-byte-array-to-a-hexadecimal-string-and-vice-versa/24343727#24343727
+            var result = new uint[256];
+            for (int i = 0; i < 256; i++)
+            {
+                string s = i.ToString("x2", CultureInfo.InvariantCulture);
+                result[i] = ((uint)s[0]) + ((uint)s[1] << 16);
+            }
+
+            return result;
         }
     }
 }
