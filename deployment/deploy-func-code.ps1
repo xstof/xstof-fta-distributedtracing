@@ -4,10 +4,10 @@ Param(
   [string]$RG,
 
   [Parameter(Mandatory=$False)]
-  [string]$Location="westeurope",
+  [string]$Location="eastus",
 
   [Parameter(Mandatory=$False)]
-  [string]$ResourcesPrefix="aicorr4"
+  [string]$ResourcesPrefix="aicorr"
 )
 
 #az login
