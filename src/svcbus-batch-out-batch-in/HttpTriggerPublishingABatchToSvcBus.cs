@@ -17,12 +17,12 @@ namespace SvcbusBatchInBatchOut
     {
         // private readonly TelemetryClient telemetryClient;
 
-        // public HttpTriggerPublishingABatchToSvcBus(/*TelemetryConfiguration telemetryConfiguration*/){
-        //     // this.telemetryClient = new TelemetryClient(telemetryConfiguration);
-        // }
+        public HttpTriggerPublishingABatchToSvcBus(/*TelemetryConfiguration telemetryConfiguration*/){
+            // this.telemetryClient = new TelemetryClient(telemetryConfiguration);
+        }
 
         [FunctionName("HttpTriggerPublishingABatchToSvcBus")]
-        public static async Task<IActionResult> Run(
+        public async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
             [ServiceBus("%ServiceBusQueueName%", Connection = "ServiceBusConnection")] IAsyncCollector<Message> messages,
             ILogger log)
