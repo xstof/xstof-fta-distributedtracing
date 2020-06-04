@@ -8,8 +8,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Microsoft.Azure.ServiceBus;
-using Microsoft.ApplicationInsights;
-using Microsoft.ApplicationInsights.Extensibility;
+// using Microsoft.ApplicationInsights;
+// using Microsoft.ApplicationInsights.Extensibility;
 
 namespace SvcbusBatchInBatchOut
 {
