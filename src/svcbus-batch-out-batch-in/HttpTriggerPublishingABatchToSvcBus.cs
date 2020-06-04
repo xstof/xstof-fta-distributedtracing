@@ -11,15 +11,21 @@ using Microsoft.Azure.ServiceBus;
 
 namespace SvcbusBatchInBatchOut
 {
-    public static class HttpTriggerPublishingABatchToSvcBus
+    public class HttpTriggerPublishingABatchToSvcBus
     {
+        //private readonly TelemetryClient _telemetryClient;
+
+        public HttpTriggerPublishingABatchToSvcBus(){
+            
+        }
+
         [FunctionName("HttpTriggerPublishingABatchToSvcBus")]
-        public static async Task<IActionResult> Run(
+        public async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
             [ServiceBus("%ServiceBusQueueName%", Connection = "ServiceBusConnection")] IAsyncCollector<Message> messages,
             ILogger log)
         {
-            int batchSize = 10;  // publish a batch of 10 messages to service bus at a time
+            int batchSize = 1;  // publish a batch of 10 messages to service bus at a time
 
             log.LogInformation("C# HTTP trigger function processed a request.");
 
