@@ -8,19 +8,21 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Microsoft.Azure.ServiceBus;
+using Microsoft.ApplicationInsights;
+using Microsoft.ApplicationInsights.Extensibility;
 
 namespace SvcbusBatchInBatchOut
 {
     public class HttpTriggerPublishingABatchToSvcBus
     {
-        //private readonly TelemetryClient _telemetryClient;
+        // private readonly TelemetryClient telemetryClient;
 
-        public HttpTriggerPublishingABatchToSvcBus(){
-            
-        }
+        // public HttpTriggerPublishingABatchToSvcBus(/*TelemetryConfiguration telemetryConfiguration*/){
+        //     // this.telemetryClient = new TelemetryClient(telemetryConfiguration);
+        // }
 
         [FunctionName("HttpTriggerPublishingABatchToSvcBus")]
-        public async Task<IActionResult> Run(
+        public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
             [ServiceBus("%ServiceBusQueueName%", Connection = "ServiceBusConnection")] IAsyncCollector<Message> messages,
             ILogger log)
@@ -41,7 +43,11 @@ namespace SvcbusBatchInBatchOut
                 await messages.AddAsync(msg);
             }
 
-            string activityId = System.Diagnostics.Activity.Current.Id ?? "(no id)";
+             //var activityId = "no id";
+            // if(System.Diagnostics.Activity.Current != null) {
+                var activityId = System.Diagnostics.Activity.Current.Id;
+            //}
+            
             string responseMessage = $"This HTTP triggered function executed successfully and published a message batch onto Service Bus.  Activity.Current Id = {activityId}";
 
             return new OkObjectResult(responseMessage);
