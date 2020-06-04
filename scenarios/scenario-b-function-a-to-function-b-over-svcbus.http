@@ -1,4 +1,4 @@
-@hosta = aicorr5-fn-a.azurewebsites.net
+@hosta = aicorr-fn-a.azurewebsites.net
 @port = 443
 @contentType = application/json
 @protocol = https
