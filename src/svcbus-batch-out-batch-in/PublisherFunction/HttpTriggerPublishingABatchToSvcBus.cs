@@ -31,16 +31,16 @@ namespace SvcbusBatchInBatchOut
 
             log.LogInformation("C# HTTP trigger function processed a request.");
 
+            var activityId = System.Diagnostics.Activity.Current.Id;
+            System.Diagnostics.Activity.Current.AddTag("SampleName", "BatchOutBatchIn");
+            System.Diagnostics.Activity.Current.AddBaggage("SampleName", "BatchOutBatchIn");
+            System.Diagnostics.Activity.Current.AddTag("SampleActor", "BatchPublisher");
+
             for(int i= 0; i<batchSize; i++){
                 var msgText = $"msg {i.ToString()}";
                 var msg = new Message(System.Text.UTF8Encoding.UTF8.GetBytes(msgText));
                 await messages.AddAsync(msg);
             }
-
-            var activityId = System.Diagnostics.Activity.Current.Id;
-            System.Diagnostics.Activity.Current.AddTag("SampleName", "BatchOutBatchIn");
-            System.Diagnostics.Activity.Current.AddBaggage("SampleName", "BatchOutBatchIn");
-            System.Diagnostics.Activity.Current.AddTag("SampleActor", "BatchPublisher");
 
             var metric = telemetryClient.GetMetric("NumberOfMessagesInBatchSubmitted");
             metric.TrackValue(batchSize);
@@ -75,5 +75,6 @@ namespace SvcbusBatchInBatchOut
 
             return new OkObjectResult(responseMessage);
         }
+
     }
 }
