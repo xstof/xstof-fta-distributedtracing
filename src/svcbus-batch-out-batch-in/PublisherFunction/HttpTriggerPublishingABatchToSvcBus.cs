@@ -31,25 +31,16 @@ namespace SvcbusBatchInBatchOut
 
             log.LogInformation("C# HTTP trigger function processed a request.");
 
-            // string name = req.Query["name"];
-
-            // string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            // dynamic data = JsonConvert.DeserializeObject(requestBody);
-            // name = name ?? data?.name;
-
             for(int i= 0; i<batchSize; i++){
                 var msgText = $"msg {i.ToString()}";
                 var msg = new Message(System.Text.UTF8Encoding.UTF8.GetBytes(msgText));
                 await messages.AddAsync(msg);
             }
 
-             //var activityId = "no id";
-            // if(System.Diagnostics.Activity.Current != null) {
-                var activityId = System.Diagnostics.Activity.Current.Id;
+            var activityId = System.Diagnostics.Activity.Current.Id;
             System.Diagnostics.Activity.Current.AddTag("SampleName", "BatchOutBatchIn");
             System.Diagnostics.Activity.Current.AddBaggage("SampleName", "BatchOutBatchIn");
             System.Diagnostics.Activity.Current.AddTag("SampleActor", "BatchPublisher");
-            //}
 
             var metric = telemetryClient.GetMetric("NumberOfMessagesInBatchSubmitted");
             metric.TrackValue(batchSize);
