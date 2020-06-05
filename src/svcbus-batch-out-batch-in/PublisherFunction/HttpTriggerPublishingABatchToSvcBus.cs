@@ -75,6 +75,5 @@ namespace SvcbusBatchInBatchOut
 
             return new OkObjectResult(responseMessage);
         }
-
     }
 }
