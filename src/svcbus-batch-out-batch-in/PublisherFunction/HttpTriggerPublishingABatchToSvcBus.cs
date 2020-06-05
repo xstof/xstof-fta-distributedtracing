@@ -49,5 +49,31 @@ namespace SvcbusBatchInBatchOut
 
             return new OkObjectResult(responseMessage);
         }
+
+        [FunctionName("HttpTriggerPublishingSingleMsgToSvcBus")]
+        public IActionResult Run2(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
+            [ServiceBus("%ServiceBusQueueName%", Connection = "ServiceBusConnection")] out Message message,
+            ILogger log)
+        {
+            int batchSize = 1;  // publish a batch of 10 messages to service bus at a time
+
+            log.LogInformation("C# HTTP trigger function processed a request.");
+
+            var msgText = $"single msg";
+            message = new Message(System.Text.UTF8Encoding.UTF8.GetBytes(msgText));
+
+            var activityId = System.Diagnostics.Activity.Current.Id;
+            System.Diagnostics.Activity.Current.AddTag("SampleName", "BatchOutBatchIn");
+            System.Diagnostics.Activity.Current.AddBaggage("SampleName", "BatchOutBatchIn");
+            System.Diagnostics.Activity.Current.AddTag("SampleActor", "BatchPublisher");
+
+            var metric = telemetryClient.GetMetric("NumberOfMessagesInBatchSubmitted");
+            metric.TrackValue(batchSize);
+
+            string responseMessage = $"This HTTP triggered function executed successfully and published a message batch onto Service Bus.  Activity.Current Id = {activityId}";
+
+            return new OkObjectResult(responseMessage);
+        }
     }
 }
