@@ -8,12 +8,20 @@ namespace SvcbusBatchInBatchOut
 {
     public static class ServiceBusQueueBatchReceiver
     {
-        [FunctionName("ServiceBusQueueBatchReceiver")]
+        // [FunctionName("ServiceBusQueueBatchReceiver")]
+        // public static void Run(
+        //     [ServiceBusTrigger("%ServiceBusQueueName%", Connection = "ServiceBusConnection")]
+        //     Message[] messages, ILogger log)
+        // {
+        //     log.LogInformation($"Batch trigger function received {messages.Length.ToString()} messages.");
+        // }
+
+        [FunctionName("ServiceBusQueueSingleMessageReceiver")]
         public static void Run(
             [ServiceBusTrigger("%ServiceBusQueueName%", Connection = "ServiceBusConnection")]
-            Message[] messages, ILogger log)
+            Message message, ILogger log)
         {
-            log.LogInformation($"Batch trigger function received {messages.Length.ToString()} messages.");
+            log.LogInformation($"Batch trigger function received a single message.");
         }
     }
 }
