@@ -39,6 +39,10 @@ namespace SvcbusBatchInBatchOut
             for(int i= 0; i<batchSize; i++){
                 var msgText = $"msg {i.ToString()}";
                 var msg = new Message(System.Text.UTF8Encoding.UTF8.GetBytes(msgText));
+
+                // Note: there is NO REAL BATCH SUPPORT
+                // see: https://github.com/Azure/azure-functions-servicebus-extension/blob/dev/src/Microsoft.Azure.WebJobs.Extensions.ServiceBus/Bindings/MessageSenderAsyncCollector.cs#L44
+                // this does not use: 
                 await messages.AddAsync(msg);
             }
 
