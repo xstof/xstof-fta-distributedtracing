@@ -27,7 +27,7 @@ namespace SvcbusBatchInBatchOut
             [ServiceBus("%ServiceBusQueueName%", Connection = "ServiceBusConnection")] IAsyncCollector<Message> messages,
             ILogger log)
         {
-            int batchSize = 2;  // publish a batch of 10 messages to service bus at a time
+            int batchSize = 100;  // publish a batch of 10 messages to service bus at a time
 
             log.LogInformation("C# HTTP trigger function processed a request.");
 
