@@ -51,6 +51,7 @@ namespace SvcbusBatchInBatchOut
 
             string responseMessage = $"This HTTP triggered function executed successfully and published a message batch onto Service Bus.  Activity.Current Id = {activityId}";
 
+            await messages.FlushAsync();
             return new OkObjectResult(responseMessage);
         }
 
